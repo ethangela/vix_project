@@ -4,23 +4,24 @@ import pandas as pd
 #print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
 from collections import defaultdict
 import itertools
+from sklearn.preprocessing import MinMaxScaler
 
 # term structure
 def main():
     
     #term structures
-    xls = pd.ExcelFile('Desktop/VIX_future_contracts_1.xlsx')
+    xls = pd.ExcelFile('./project_VIX_future_contracts.xlsx')
     months = ['19 Sep','19 Oct','19 Nov','19 Dec','20 Jan','20 Feb','20 Mar','20 Apr','20 May','20 Jun','20 Jul','20 Aug','20 Sep','20 Oct','20 Nov','20 Dec','21 Jan'] 
     dates = ['2019-08-19','2019-09-18',
-        '2019-09-19','2019-10-18',
-        '2019-10-19','2019-11-18',
-        '2019-11-19','2019-12-18',
-        '2019-12-19','2020-01-19',
-        '2020-01-20','2020-02-19',
-        '2020-02-20','2020-03-19',
-        '2020-03-20','2020-04-19',
-        '2020-04-20','2020-05-19',
-        '2020-05-20','2020-06-19']
+        '2019-09-19','2019-10-16',
+        '2019-10-17','2019-11-20',
+        '2019-11-21','2019-12-18',
+        '2019-12-19','2020-01-22',
+        '2020-01-23','2020-02-19',
+        '2020-02-20','2020-03-18',
+        '2020-03-19','2020-04-15',
+        '2020-04-16','2020-05-20',
+        '2020-05-21','2020-06-17']
     pairs = list(itertools.combinations([8,7,6,5,4,3,2], 2))
     
     for j in range(10):
@@ -57,11 +58,11 @@ def main():
     
     df_final_combine = df_final_combine.drop(columns=['m_1_hl'])
     
-    #print(df_final_combine.head(40))
+    #print(df_final_combine.head(50))
     
 
     #technical variables
-    xls = pd.ExcelFile('Desktop/VIX_Related.xlsm')
+    xls = pd.ExcelFile('./project_VIX_Related.xlsm')
     df_vix = pd.read_excel(xls)[['date','vix']]
     date_range = pd.bdate_range('2019-01-19', '2020-06-19').tolist()
     df_vix_range = df_vix[df_vix['date'].isin(date_range)].reset_index(drop=True)
@@ -135,18 +136,81 @@ def main():
     df_final_combine['BB_above'] = bollinger_bands_above
     df_final_combine['BB_below'] = bollinger_bands_below
     
-    #print(df_final_combine.head(50))
+    # print(df_final_combine.head(50))
 
 
-    # ##vvix
-    # xls = pd.ExcelFile('Desktop/VIX_VVIX.xlsx')
-    # df = pd.read_excel(xls)
-    # print(df['date'].head(10))    
-    #print(df_dic.keys())
+    ##vvix
+    xls = pd.ExcelFile('./VIX_VVIX_new.xlsx')
+    df_vvix = pd.read_excel(xls)
+    df_vvix['vvix_hl'] = df_vvix.apply(lambda x: x['high price'] - x['low price'], axis=1)
+    df_vvix = df_vvix.drop(columns=['VIX Index date', 'VIX Index low price', 'VIX Index high price', 'VIX Index last price'])
+    # print(df_vvix.head(10))    
+    vvix = []
+    vvix_hl = []
+    for date in df_final_combine['date'].tolist():
+        try:
+            vvix.append(df_vvix[df_vvix['VVIX Index date'] == date]['last price'].values[0])
+            vvix_hl.append(df_vvix[df_vvix['VVIX Index date'] == date]['vvix_hl'].values[0])
+        except:
+            print('failed date: {}'.format(date))
+    df_final_combine['vvix'] = vvix
+    df_final_combine['vvix_hl'] = vvix_hl
 
-    df_final_combine.to_pickle('Desktop/vix_future_preprocessed.pkl')
+    # print(df_final_combine.head(50))
+
+
+    ##ground_truth
+    xls = pd.ExcelFile('./project_VIX_future_contracts.xlsx')
+    months = ['19 Sep','19 Oct','19 Nov','19 Dec','20 Jan','20 Feb','20 Mar','20 Apr','20 May','20 Jun','20 Jul','20 Aug','20 Sep','20 Oct','20 Nov','20 Dec','21 Jan'] 
+    dates = ['2019-08-19','2019-09-18',
+        '2019-09-19','2019-10-16',
+        '2019-10-17','2019-11-20',
+        '2019-11-21','2019-12-18',
+        '2019-12-19','2020-01-22',
+        '2020-01-23','2020-02-19',
+        '2020-02-20','2020-03-18',
+        '2020-03-19','2020-04-15',
+        '2020-04-16','2020-05-20',
+        '2020-05-21','2020-06-17',
+        '2020-06-18','2020-07-22']
+    
+    for i in range(11):
+        final_date = pd.bdate_range(dates[2*i], dates[2*i+1]).tolist()
+
+        df = pd.read_excel(xls, months[i])
+        df = df.rename(columns={'Unnamed: 0':"index", 'Unnamed: 1':"date_open", 'Unnamed: 3':"date_last", 'Unnamed: 5':"date_high", 'Unnamed: 7':"date_low"})
+
+        df_open = df[df['date_open'].isin(final_date)][['date_open']].reset_index(drop=True)
+        df_last = df[df['date_last'].isin(final_date)][['PX_LAST']].reset_index(drop=True)
+        df_concat = pd.concat([df_open, df_last], axis=1, ignore_index=True)
+        df_concat.columns = ['date', 'm_1_close']
+        if i == 0:
+            date_list = df_concat['date'].to_list()
+            m1_list = df_concat['m_1_close'].to_list()
+        else:
+            date_list += df_concat['date'].to_list()
+            m1_list += df_concat['m_1_close'].to_list()
+    
+    gt_3 = m1_list[3:len(df_final_combine)+3]
+    date_3 = date_list[3:len(df_final_combine)+3]
+    gt_5 = m1_list[5:len(df_final_combine)+5]
+    date_5 = date_list[5:len(df_final_combine)+5]
+
+    # print(date_3[0], gt_3[0], date_3[-1], gt_3[-1])
+    # print(date_5[0], date_5[-1])
+
+    df_final_combine['gt_3'] = gt_3
+    df_final_combine['gt_5'] = gt_5
+
+    print(df_final_combine.head(50))
+
+    
+    ##output
+    df_final_combine.to_pickle('./vix_future_preprocessed.pkl')
     print('completed')
 
 
 if __name__ == "__main__":
     main()
+    # all_data = pd.read_pickle('./vix_future_preprocessed.pkl')
+    # print(all_data.head(10))

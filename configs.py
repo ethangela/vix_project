@@ -28,40 +28,32 @@ class Config(object):
 
 
 def get_config(parse=True, **optional_kwargs):
-    """
-    Get configurations as attributes of class
-    1. Parse configurations with argparse.
-    2. Create Config class initilized with parsed kwargs.
-    3. Return Config class.
-    """
     parser = argparse.ArgumentParser()
 
     # Basic
-    parser.add_argument('--mode', type=str, default='train') 
     parser.add_argument('--verbose', type=str2bool, default='true')
-    parser.add_argument('--video_root_dir', type=str, default='.') 
-    parser.add_argument('--save_dir', type=str, default='./checkpoint_new_lstm_april_23/') 
-    parser.add_argument('--score_dir', type=str, default='./evaluate_result.pkl') 
-    parser.add_argument('--ckpt_path', type=str, default='./checkpoint/_epoch-49.pkl')
+    parser.add_argument('--pickle_path', type=str, default='./vix_future_preprocessed.pkl')
+    parser.add_argument('--save_dir', type=str, default='./checkpoint/') 
+    parser.add_argument('--ckpt_path', type=str, default='./checkpoint/_epoch-99.pkl')
 
     # Model
-    parser.add_argument('--attention_mode', type=str2bool, default='true')
-    parser.add_argument('--decoder_mode', type=str, default='LSTM')
-    parser.add_argument('--v_input_size', type=int, default=2048)
-    parser.add_argument('--v_hidden_size', type=int, default=512)
-    parser.add_argument('--q_input_size', type=int, default=768)
-    parser.add_argument('--q_hidden_size', type=int, default=192)
-    parser.add_argument('--lstm_input_size', type=int, default=704)
-    parser.add_argument('--lstm_hidden_size', type=int, default=352) 
-    parser.add_argument('--mlp_input_size', type=int, default=704) 
-    parser.add_argument('--mlp_hidden_size1', type=int, default=512)
-    parser.add_argument('--mlp_hidden_size2', type=int, default=128)
+    # parser.add_argument('--attention_mode', type=str2bool, default='true')
+    parser.add_argument('--input_size', type=int, default=41)
+    parser.add_argument('--num_layers', type=int, default=2)
+    parser.add_argument('--lstm_hidden_size', type=int, default=80) 
+    parser.add_argument('--full_hidden_size1', type=int, default=21)
+    parser.add_argument('--full_hidden_size2', type=int, default=28)
 
     # Train
-    parser.add_argument('--n_epochs', type=int, default=100)
-    parser.add_argument('--clip', type=float, default=5.0) ###
+    parser.add_argument('--mode', type=str, default='train') 
+    parser.add_argument('--result_mode', type=int, default=3) 
+    parser.add_argument('--n_epochs', type=int, default=300)
+    parser.add_argument('--clip', type=float, default=5.0) 
     parser.add_argument('--lr', type=float, default=1e-4)
-    parser.add_argument('--batch_size', type=int, default=128)
+    parser.add_argument('--batch_size', type=int, default=22)
+    parser.add_argument('--sequence_length', type=int, default=44)
+    parser.add_argument('--test_ratio', type=float, default=0.2) 
+    parser.add_argument('--drop_rate', type=float, default=0.0) 
 
     if parse:
         kwargs = parser.parse_args()
