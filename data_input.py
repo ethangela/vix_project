@@ -211,6 +211,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
-    # all_data = pd.read_pickle('./vix_future_preprocessed.pkl')
-    # print(all_data.head(10))
+    # main()
+    import os
+    from configs import get_config
+    config = get_config()
+    print(os.path.isfile(config.ckpt_path))

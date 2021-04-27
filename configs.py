@@ -33,8 +33,8 @@ def get_config(parse=True, **optional_kwargs):
     # Basic
     parser.add_argument('--verbose', type=str2bool, default='true')
     parser.add_argument('--pickle_path', type=str, default='./vix_future_preprocessed.pkl')
-    parser.add_argument('--save_dir', type=str, default='./checkpoint/') 
-    parser.add_argument('--ckpt_path', type=str, default='./checkpoint/_epoch-99.pkl')
+    parser.add_argument('--save_dir', type=str, default='./checkpoint') 
+    parser.add_argument('--ckpt_path', type=str, default='epoch_3000_gt5.pkl')
 
     # Model
     # parser.add_argument('--attention_mode', type=str2bool, default='true')
@@ -46,11 +46,12 @@ def get_config(parse=True, **optional_kwargs):
 
     # Train
     parser.add_argument('--mode', type=str, default='train') 
-    parser.add_argument('--result_mode', type=int, default=3) 
-    parser.add_argument('--n_epochs', type=int, default=300)
+    parser.add_argument('--result_mode', type=int, default=5) 
+    parser.add_argument('--n_epochs', type=int, default=2000)
+    parser.add_argument('--start_epoch', type=int, default=5001)
     parser.add_argument('--clip', type=float, default=5.0) 
-    parser.add_argument('--lr', type=float, default=1e-4)
-    parser.add_argument('--batch_size', type=int, default=22)
+    parser.add_argument('--lr', type=float, default=0.0007)
+    parser.add_argument('--batch_size', type=int, default=1)
     parser.add_argument('--sequence_length', type=int, default=44)
     parser.add_argument('--test_ratio', type=float, default=0.2) 
     parser.add_argument('--drop_rate', type=float, default=0.0) 
