@@ -210,6 +210,58 @@ def main():
     print('completed')
 
 
+
+
+def main_new():
+    ## new vix project ##     
+    mth_code = {'VXF':1, 'VXG':2, 'VXH':3, 'VXJ':4, 'VXK':5, 'VXM':6, 'VXN':7, 'VXQ':8, 'VXU':9, 'VXV':10, 'VXX':11, 'VXZ':12}
+
+    for year in ['2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021']:
+        subdirs = [ f.path for f in os.scandir('/home/sunyang/Downloads/'+year+'/') if f.is_dir() ]
+        b_dates = pd.bdate_range(year+'/01/01', year+'/12/31')
+        miss = []
+        for i,subdir in enumerate(subdirs):
+            futures = sorted(os.listdir(subdir)) 
+            curt_mth = int(subdir.split('/')[-1][4:6])
+            if mth_code[futures[0][:3]] == curt_mth:
+                for future in futures:
+                    fut_mth = mth_code[future[:3]] 
+                    if fut_mth > curt_mth:
+                        trm_mth = fut_mth - curt_mth + 1 
+                    elif fut_mth == curt_mth:
+                        trm_mth = 1
+                    else:
+                        trm_mth = fut_mth + 13 - curt_mth
+                    df = pd.read_csv(os.path.join(subdir, future), compression='gzip')
+                    intraday_high = df['HighTradePrice'].max()
+                    intraday_low = df['LowTradePrice'].min()
+                    settle_close = df['CloseTradePrice'].iloc[-1]
+                    #info now: subdir_current_day, trm_mth_high, trm_mth_low, trm_mth_close
+            else:
+                for future in futures:
+                    fut_mth = mth_code[future[:3]] 
+                    if fut_mth > curt_mth:
+                        trm_mth = fut_mth - curt_mth
+                    else:
+                        trm_mth = fut_mth + 13 - curt_mth
+                    df = pd.read_csv(os.path.join(subdir, future), compression='gzip')
+                    intraday_high = df['HighTradePrice'].max()
+                    intraday_low = df['LowTradePrice'].min()
+                    settle_close = df['CloseTradePrice'].iloc[-1]
+                    #info now: subdir_current_day, trm_mth_high, trm_mth_low, trm_mth_close
+
+
+        
+        # #check missing day
+        #     number_files = len(list_)
+        #     for mth in ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']:
+        #         if number_files < 8 and subdir.split('/')[-1] in b_dates and subdir.split('/')[-1][-4:-2] == mth:
+        #             print('{}: {}'.format(subdir.split('/')[-1], number_files))
+        #             miss.append(int(subdir.split('/')[-1]))
+        # print(sorted(miss))
+
+
+
 if __name__ == "__main__":
     # main()
     import os
