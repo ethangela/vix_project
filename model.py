@@ -9,6 +9,7 @@ import numpy as np
 import json
 from tqdm import tqdm, trange
 import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "1" 
 import pandas as pd
 import math
 from configs import get_config
@@ -22,13 +23,14 @@ class VixData(Dataset):
         train_length = int(data_length*(1-test_ratio))
 
         def df_preprocess(dataframe, seq_len):
-            date = [ x.date() for x in dataframe.round(2).iloc[:].to_numpy()[:,0] ] #[length,]
+            date = dataframe.loc[:, 'date'].values #date = [ x.date() for x in dataframe.round(2).iloc[:].to_numpy()[:,0] ] #[length,]
             # feature = dataframe.round(2).iloc[:].to_numpy()[:,1:-2] #[length,input_size]
             # gt_3d = np.squeeze(dataframe.round(2).iloc[:].to_numpy()[:,-1]) #[length,]
             # gt_5d = np.squeeze(dataframe.round(2).iloc[:].to_numpy()[:,-2]) #[length,]
-            feature = dataframe.round(2).loc[:, 'm_2_hl':'vvix_hl'].values
-            gt_3d = dataframe.round(2).loc[:, 'gt_3'].values
-            gt_5d = dataframe.round(2).loc[:, 'gt_5'].values
+            feature = dataframe.round(2).loc[:, 'm_1_hl':'vvix_hl'].values ######################
+            gt_1d = dataframe.round(2).loc[:, 'gt_1'].values ######################
+            gt_3d = dataframe.round(2).loc[:, 'gt_3'].values 
+            gt_5d = dataframe.round(2).loc[:, 'gt_5'].values 
             
             seq_features = [] 
             for seq_i in range(len(date)-seq_len+1):
@@ -36,17 +38,18 @@ class VixData(Dataset):
                 seq_features.append(seq_feature)
             seq_features = np.array(seq_features) #[length-seq_len+1, seq_len, input_size]
             seq_date = date[seq_len-1:] #[length-seq_len+1,]
+            seq_gt_1d = gt_1d[seq_len-1:] #[length-seq_len+1,] ######################
             seq_gt_3d = gt_3d[seq_len-1:] #[length-seq_len+1,]
             seq_gt_5d = gt_5d[seq_len-1:] #[length-seq_len+1,]
 
-            return seq_date, seq_features, seq_gt_3d, seq_gt_5d
+            return seq_date, seq_features, seq_gt_1d, seq_gt_3d, seq_gt_5d ######################
 
-        date, feature, gt_3d, gt_5d = df_preprocess(all_data, sequence_length)
+        date, feature, gt_1d, gt_3d, gt_5d = df_preprocess(all_data, sequence_length) ######################
 
         if mode.lower() == 'train':
-            self.date, self.feature, self.gt_3d, self.gt_5d = date[:train_length], feature[:train_length], gt_3d[:train_length], gt_5d[:train_length]
+            self.date, self.feature, self.gt_1d, self.gt_3d, self.gt_5d = date[:train_length], feature[:train_length], gt_1d[:train_length], gt_3d[:train_length], gt_5d[:train_length] ######################
         elif mode.lower() == 'evaluate':
-            self.date, self.feature, self.gt_3d, self.gt_5d = date[train_length:], feature[train_length:], gt_3d[train_length:], gt_5d[train_length:]
+            self.date, self.feature, self.gt_1d, self.gt_3d, self.gt_5d = date[train_length:], feature[train_length:], gt_1d[train_length:], gt_3d[train_length:], gt_5d[train_length:] ######################
 
         #print('features sample type {}, features sample {}, target sample {}'.format(type(list(self.feature[0])), self.feature[0], self.gt_3d[0]))
             
@@ -54,7 +57,9 @@ class VixData(Dataset):
         return len(self.date)
 
     def __getitem__(self, index):
-        if self.result_mode == 3:
+        if self.result_mode == 1:
+            gt = torch.Tensor([self.gt_1d[index]])
+        elif self.result_mode == 3:
             gt = torch.Tensor([self.gt_3d[index]])
         elif self.result_mode == 5:
             gt = torch.Tensor([self.gt_5d[index]])
@@ -210,7 +215,7 @@ class Solver(object):
             # Save parameters at checkpoint
             if os.path.isdir(self.config.save_dir) is False:
                 os.mkdir(self.config.save_dir)
-            if epoch_i%500 == 0:
+            if epoch_i%50 == 0:
                 ckpt_path = str(self.config.save_dir) + f'epoch_{epoch_i}_gt{str(self.config.result_mode)}.pkl'
                 tqdm.write(f'Save parameters at {ckpt_path}')
                 torch.save(self.model.state_dict(), ckpt_path)

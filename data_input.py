@@ -5,6 +5,9 @@ import pandas as pd
 from collections import defaultdict
 import itertools
 from sklearn.preprocessing import MinMaxScaler
+import os
+import math
+import numpy as np
 
 # term structure
 def main():
@@ -210,61 +213,285 @@ def main():
     print('completed')
 
 
-
-
 def main_new():
     ## new vix project ##     
+    
+    # term structure
     mth_code = {'VXF':1, 'VXG':2, 'VXH':3, 'VXJ':4, 'VXK':5, 'VXM':6, 'VXN':7, 'VXQ':8, 'VXU':9, 'VXV':10, 'VXX':11, 'VXZ':12}
-
+    pairs = list(itertools.combinations([8,7,6,5,4,3,2,1], 2))
+    c = 0
     for year in ['2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021']:
-        subdirs = [ f.path for f in os.scandir('/home/sunyang/Downloads/'+year+'/') if f.is_dir() ]
+        subdirs = [ f.path for f in os.scandir(year+'/') if f.is_dir() ] #2011/20110101, 2011/20110102, ...
+        subdirs = sorted(subdirs)
         b_dates = pd.bdate_range(year+'/01/01', year+'/12/31')
-        miss = []
-        for i,subdir in enumerate(subdirs):
-            futures = sorted(os.listdir(subdir)) 
-            curt_mth = int(subdir.split('/')[-1][4:6])
-            if mth_code[futures[0][:3]] == curt_mth:
-                for future in futures:
-                    fut_mth = mth_code[future[:3]] 
-                    if fut_mth > curt_mth:
-                        trm_mth = fut_mth - curt_mth + 1 
-                    elif fut_mth == curt_mth:
-                        trm_mth = 1
+        for i,subdir in enumerate(subdirs): #0, 2011/20110101 ...
+            date = subdir.split('/')[-1]
+            if date in b_dates:
+                df_dic = {}
+                df_dic['date'] = date
+                futures = sorted(os.listdir(subdir)) #VXF1, VXG!, ... 
+                curt_mth = int(subdir.split('/')[-1][4:6]) #1
+                # print(date, curt_mth, mth_code[futures[0][:3]])
+                if curt_mth == 1 and mth_code[futures[0][:3]] == 1:
+                    for future in futures: #default 8
+                            fut_mth = mth_code[future[:3]] 
+                            if fut_mth > curt_mth:
+                                trm_mth = fut_mth - curt_mth + 1 
+                            elif fut_mth == curt_mth:
+                                trm_mth = 1
+                            if trm_mth >= 9:
+                                continue
+                            df = pd.read_csv(os.path.join(subdir, future), compression='gzip')
+                            intraday_high = df['HighTradePrice'].max()
+                            intraday_low = df['LowTradePrice'].min()
+                            try:
+                                settle_close = [x for x in df['CloseTradePrice'].tolist() if (math.isnan(x) == False)][-1]
+                            except:
+                                settle_close = math.nan   
+                            df_dic['m_{}_close'.format(trm_mth)] = settle_close
+                            df_dic['m_{}_hl'.format(trm_mth)] = intraday_high - intraday_low
+                elif curt_mth < 5 and mth_code[futures[0][:3]] != 1:
+                    if mth_code[futures[0][:3]] == curt_mth:
+                        for future in futures: #default 8
+                            fut_mth = mth_code[future[:3]] 
+                            if fut_mth > curt_mth:
+                                trm_mth = fut_mth - curt_mth + 1 
+                            elif fut_mth == curt_mth:
+                                trm_mth = 1
+                            else:
+                                trm_mth = fut_mth + 13 - curt_mth
+                            if trm_mth >= 9:
+                                continue
+                            df = pd.read_csv(os.path.join(subdir, future), compression='gzip')
+                            intraday_high = df['HighTradePrice'].max()
+                            intraday_low = df['LowTradePrice'].min()
+                            try:
+                                settle_close = [x for x in df['CloseTradePrice'].tolist() if (math.isnan(x) == False)][-1]
+                            except:
+                                settle_close = math.nan   
+                            df_dic['m_{}_close'.format(trm_mth)] = settle_close
+                            df_dic['m_{}_hl'.format(trm_mth)] = intraday_high - intraday_low
                     else:
-                        trm_mth = fut_mth + 13 - curt_mth
-                    df = pd.read_csv(os.path.join(subdir, future), compression='gzip')
-                    intraday_high = df['HighTradePrice'].max()
-                    intraday_low = df['LowTradePrice'].min()
-                    settle_close = df['CloseTradePrice'].iloc[-1]
-                    #info now: subdir_current_day, trm_mth_high, trm_mth_low, trm_mth_close
+                        for future in futures:
+                            fut_mth = mth_code[future[:3]] 
+                            if fut_mth > curt_mth:
+                                trm_mth = fut_mth - curt_mth
+                            else:
+                                trm_mth = fut_mth + 13 - curt_mth
+                            if trm_mth >= 9:
+                                continue
+                            df = pd.read_csv(os.path.join(subdir, future), compression='gzip')
+                            intraday_high = df['HighTradePrice'].max()
+                            intraday_low = df['LowTradePrice'].min()
+                            try:
+                                settle_close = [x for x in df['CloseTradePrice'].tolist() if (math.isnan(x) == False)][-1]
+                            except:
+                                settle_close = math.nan     
+                            df_dic['m_{}_close'.format(trm_mth)] = settle_close
+                            df_dic['m_{}_hl'.format(trm_mth)] = intraday_high - intraday_low
+                else:
+                    if curt_mth in [mth_code[x[:3]] for x in futures]:
+                        for future in futures:
+                            fut_mth = mth_code[future[:3]] 
+                            if fut_mth < curt_mth:
+                                trm_mth = fut_mth + 13 - curt_mth
+                            else:
+                                trm_mth = fut_mth + 1 - curt_mth
+                            if trm_mth >= 9:
+                                continue
+                            df = pd.read_csv(os.path.join(subdir, future), compression='gzip')
+                            intraday_high = df['HighTradePrice'].max()
+                            intraday_low = df['LowTradePrice'].min()
+                            try:
+                                settle_close = [x for x in df['CloseTradePrice'].tolist() if (math.isnan(x) == False)][-1]
+                            except:
+                                settle_close = math.nan   
+                            df_dic['m_{}_close'.format(trm_mth)] = settle_close
+                            df_dic['m_{}_hl'.format(trm_mth)] = intraday_high - intraday_low
+                    else:
+                        for future in futures:
+                            fut_mth = mth_code[future[:3]] 
+                            if fut_mth < curt_mth:
+                                trm_mth = fut_mth + 12 - curt_mth
+                            else:
+                                trm_mth = fut_mth - curt_mth
+                            if trm_mth >= 9:
+                                continue
+                            df = pd.read_csv(os.path.join(subdir, future), compression='gzip')
+                            intraday_high = df['HighTradePrice'].max()
+                            intraday_low = df['LowTradePrice'].min()
+                            try:
+                                settle_close = [x for x in df['CloseTradePrice'].tolist() if (math.isnan(x) == False)][-1]
+                            except:
+                                settle_close = math.nan   
+                            df_dic['m_{}_close'.format(trm_mth)] = settle_close
+                            df_dic['m_{}_hl'.format(trm_mth)] = intraday_high - intraday_low   
+                
+                if c == 0:
+                    df_final = pd.DataFrame([df_dic])
+                else:
+                    df_final = df_final.append(df_dic, ignore_index=True)               
+                c += 1
             else:
-                for future in futures:
-                    fut_mth = mth_code[future[:3]] 
-                    if fut_mth > curt_mth:
-                        trm_mth = fut_mth - curt_mth
-                    else:
-                        trm_mth = fut_mth + 13 - curt_mth
-                    df = pd.read_csv(os.path.join(subdir, future), compression='gzip')
-                    intraday_high = df['HighTradePrice'].max()
-                    intraday_low = df['LowTradePrice'].min()
-                    settle_close = df['CloseTradePrice'].iloc[-1]
-                    #info now: subdir_current_day, trm_mth_high, trm_mth_low, trm_mth_close
+                continue
+    for pair in pairs:
+        df_final.loc[:,'m_{}-{}'.format(pair[0],pair[1])] = df_final['m_{}_close'.format(pair[0])] - df_final['m_{}_close'.format(pair[1])] 
+    for i in range(2,9):
+        df_final = df_final.drop(columns=['m_{}_close'.format(i)])
+    df_final = df_final.fillna(method='ffill')
+    #print(df_final)
+    
 
 
-        
-        # #check missing day
-        #     number_files = len(list_)
-        #     for mth in ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']:
-        #         if number_files < 8 and subdir.split('/')[-1] in b_dates and subdir.split('/')[-1][-4:-2] == mth:
-        #             print('{}: {}'.format(subdir.split('/')[-1], number_files))
-        #             miss.append(int(subdir.split('/')[-1]))
-        # print(sorted(miss))
+    #technical variables
+    xls = pd.ExcelFile('./VIX_2011-2021.xlsx')
+    df_vix = pd.read_excel(xls, header=0)
+    for date in df_final['date'].tolist():
+        if len(df_vix[df_vix['date'] == date]['vix'].values) != 0:
+            continue
+        else:
+            print('invalid vix date: {}'.format(date))
+            df_final = df_final.drop(df_final[df_final['date'] == date].index)
+    df_final = df_final.reset_index(drop=True)
+    
+    def prior_avg(datafarme, date, day):
+        idx = datafarme[datafarme['date'] == date].index[0]
+        sum_ = 0
+        for i in range(idx-day,idx-1):
+            sum_ += datafarme.loc[i]['vix']
+        avg = sum_/day
+        return avg
+    
+    def avg_above(datafarme, date, day):
+        avg = prior_avg(datafarme, date, day)
+        spot = datafarme[datafarme['date'] == date]['vix'].values[0]
+        result = spot - avg > 0
+        return 1 if result else 0
 
+    def avg_below(datafarme, date, day):
+        avg = prior_avg(datafarme, date, day)
+        spot = datafarme[datafarme['date'] == date]['vix'].values[0]
+        result = spot - avg < 0
+        return 1 if result else 0
+    
+    def three_day_above(datafarme, date, day):
+        idx = datafarme.index[datafarme['date']==date].tolist()[0]
+        d1 = avg_above(datafarme, datafarme.iloc[idx-1]['date'], day)
+        d2 = avg_above(datafarme, datafarme.iloc[idx-2]['date'], day)
+        d3 = avg_above(datafarme, datafarme.iloc[idx-3]['date'], day)
+        if d1 == d2 == d3 == 1:
+            return 1
+        else:
+            return 0
+
+    def bollinger_bands(datafarme, date, type_):
+        spot = datafarme[datafarme['date'] == date]['vix'].values[0]
+        avg = prior_avg(datafarme, date, 21)
+        idx = datafarme.index[datafarme['date']==date].tolist()[0]
+        std = datafarme.iloc[idx-21:idx]['vix'].std()
+        if type_ == 'above':
+            return 1 if spot > avg+2*std else 0
+        elif type_ == 'below':
+            return 1 if spot < avg-2*std else 0
+
+    p_14_above, p_50_above, p_100_above = [], [], []
+    p_14_below, p_50_below, p_100_below = [], [], []
+    p_14_3day_above, p_50_3day_above, p_100_3day_above = [], [], []
+    bollinger_bands_above, bollinger_bands_below = [], []
+    
+    for date in df_final['date'].tolist()[103:]:
+        p_14_above.append(avg_above(df_vix, date, 14))
+        p_50_above.append(avg_above(df_vix, date, 50))
+        p_100_above.append(avg_above(df_vix, date, 100))
+        p_14_below.append(avg_below(df_vix, date, 14))
+        p_50_below.append(avg_below(df_vix, date, 50))
+        p_100_below.append(avg_below(df_vix, date, 100))
+        p_14_3day_above.append(three_day_above(df_vix, date, 14))
+        p_50_3day_above.append(three_day_above(df_vix, date, 50))
+        p_100_3day_above.append(three_day_above(df_vix, date, 100))
+        bollinger_bands_above.append(bollinger_bands(df_vix, date, 'above'))
+        bollinger_bands_below.append(bollinger_bands(df_vix, date, 'below'))
+
+    df_final = df_final.iloc[103:]
+    df_final = df_final.reset_index(drop=True)
+    assert len(df_final) == len(p_14_above) == len(p_100_3day_above)
+    df_final.loc[:,'p_14_above'] = p_14_above
+    df_final.loc[:,'p_50_above'] = p_50_above
+    df_final.loc[:,'p_100_above'] = p_100_above
+    df_final.loc[:,'p_14_below'] = p_14_below
+    df_final.loc[:,'p_50_below'] = p_50_below
+    df_final.loc[:,'p_100_below'] = p_100_below
+    df_final.loc[:,'p_14_3day_above'] = p_14_3day_above
+    df_final.loc[:,'p_50_3day_above'] = p_50_3day_above
+    df_final.loc[:,'p_100_3day_above'] = p_100_3day_above
+    df_final.loc[:,'BB_above'] = bollinger_bands_above
+    df_final.loc[:,'BB_below'] = bollinger_bands_below
+    # print(df_final.head(50))
+    
+
+
+    ##vvix
+    xls = pd.ExcelFile('./VVIX_2012-2021.xlsx')
+    df_vvix = pd.read_excel(xls, header=0)
+    df_hl = df_vvix[['high date', 'VVIX high', 'VVIX low']]
+    df_close = df_vvix[['close date', 'VVIX close']]
+    
+    df_hl.loc[:,'vvix_hl'] = df_hl.apply(lambda x: x['VVIX high'] - x['VVIX low'], axis=1)
+    # print(df_vvix.head(10))    
+    vvix = []
+    vvix_hl = []
+    for date in df_final['date'].tolist():
+        if len(df_hl[df_hl['high date'] == date]['vvix_hl'].values) != 0 and len(df_close[df_close['close date'] == date]['VVIX close'].values) != 0:
+            vvix_hl.append( df_hl[df_hl['high date'] == date]['vvix_hl'].values[0] )
+            vvix.append( df_close[df_close['close date'] == date]['VVIX close'].values[0] )
+        else:
+            df_final = df_final.drop(df_final[df_final['date'] == date].index)
+            print('invalid vvix date: {}'.format(date))
+    df_final.loc[:,'vvix'] = vvix
+    df_final.loc[:,'vvix_hl'] = vvix_hl
+    df_final = df_final.reset_index(drop=True)
+    print(df_final.tail(10))
+    
+
+
+    ##normalize
+    scaler = MinMaxScaler()
+    for column in df_final.columns:
+        if column != 'date' and column != 'm_1_close':
+            df_final[column] = scaler.fit_transform(df_final[[column]])
+
+
+
+    ##ground_truth
+    date_list = df_final['date'].to_list()
+    m1_list = df_final['m_1_close'].to_list()
+    gt_1 = m1_list[1:] + [math.nan]
+    date_1 = date_list[1:] + [math.nan]
+    gt_3 = m1_list[3:] + [math.nan, math.nan, math.nan]
+    date_3 = date_list[3:] + [math.nan, math.nan, math.nan]
+    gt_5 = m1_list[5:] + [math.nan, math.nan, math.nan, math.nan, math.nan]
+    date_5 = date_list[5:] + [math.nan, math.nan, math.nan, math.nan, math.nan]
+
+    df_final.loc[:,'gt_1'] = gt_1
+    df_final.loc[:,'gt_3'] = gt_3
+    df_final.loc[:,'gt_5'] = gt_5
+
+    df_final.drop(df_final.tail(5).index, inplace=True)
+    df_final = df_final.drop(columns=['m_1_close'])
+    df_final = df_final.reset_index(drop=True)
+    print(df_final.tail(10))
+
+
+
+    ##output
+    df_final.to_pickle('./vix_future_preprocessed_new.pkl')
+    print('completed')
 
 
 if __name__ == "__main__":
     # main()
-    import os
-    from configs import get_config
-    config = get_config()
-    print(os.path.isfile(config.ckpt_path))
+    # main_new()
+    all_data = pd.read_pickle('./vix_future_preprocessed_new.pkl')
+    # print(all_data)
+    date = all_data.loc[:, 'date'].values
+    print(date)
