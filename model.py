@@ -9,7 +9,7 @@ import numpy as np
 import json
 from tqdm import tqdm, trange
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "1" 
+os.environ["CUDA_VISIBLE_DEVICES"] = "0" 
 import pandas as pd
 import math
 from configs import get_config
@@ -66,7 +66,7 @@ class VixData(Dataset):
         
         feature = torch.Tensor(list(self.feature[index]))   
 
-        date = self.date[index].strftime('%m/%d/%Y')
+        date = self.date[index]
         
         return date, feature, gt
 
