@@ -203,9 +203,9 @@ class Solver(object):
             
             # average loss per epoch  
             e_loss = torch.stack(loss_history).mean()
-            print('date', date_list)
-            print('predict', out_list)
-            print('target', target_list)
+            #print('date', date_list)
+            #print('predict', out_list)
+            #print('target', target_list)
 
             # tesorboard plotting 
             # if self.config.verbose:
