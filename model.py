@@ -82,10 +82,9 @@ class vanilla_LSTM(nn.Module):
         self.lstm = nn.LSTM(input_size, lstm_hidden_size, num_layers, bidirectional=False)
         self.fc1 = nn.Linear(lstm_hidden_size, full_hiden_size1)
         self.drop1 = nn.Dropout(drop_rate)
-        # self.fc2 = nn.Linear(full_hiden_size1,full_hiden_size2)
-        # self.drop2 = nn.Dropout(drop_rate)
-        # self.fc3 = nn.Linear(full_hiden_size2,1)
-        self.fc3 = nn.Linear(full_hiden_size1,1)
+        self.fc2 = nn.Linear(full_hiden_size1,full_hiden_size2)
+        self.drop2 = nn.Dropout(drop_rate)
+        self.fc3 = nn.Linear(full_hiden_size2,1) ###
         self.out_length = out_length
  
     def forward(self, features):
@@ -106,7 +105,7 @@ class vanilla_LSTM(nn.Module):
 
         # generate predict
         outputs = nn.functional.relu(self.drop1(self.fc1(outputs))) #[batch_size, full_size1]
-        # outputs = nn.functional.relu(self.drop2(self.fc2(outputs))) #[batch_size, full_size2]
+        outputs = nn.functional.relu(self.drop2(self.fc2(outputs))) #[batch_size, full_size2] ###
         predicts = self.fc3(outputs) #[batch_size, 1]
         predicts = predicts.squeeze()#(-1) 
  
@@ -169,9 +168,10 @@ class Solver(object):
                 #     tqdm.write(str(epoch_i) + ': training for batch' +str(batch_i))
         
                 predicts = self.model(features.detach()) # [batch_size,]
-                date_list.append(date[0]) 
-                out_list.append(predicts.item())
-                target_list.append(ground_truth.item())
+                #date_list.append(date) 
+                #out_list.append(predicts.item())
+                #target_list.append(ground_truth.item())
+                
                 # loss calculation 
                 #if epoch_i%10 == 0:
                 #    print('SHAPE CHECK. output: {} with shape {}'.format(predicts, predicts.size()))
@@ -215,8 +215,9 @@ class Solver(object):
             # Save parameters at checkpoint
             if os.path.isdir(self.config.save_dir) is False:
                 os.mkdir(self.config.save_dir)
-            if epoch_i%50 == 0:
-                ckpt_path = str(self.config.save_dir) + f'epoch_{epoch_i}_gt{str(self.config.result_mode)}.pkl'
+            if epoch_i%100 == 0:
+                checkpint_name = 'seq_{}_epoch_{}_gt{}.pkl'.format(self.config.sequence_length, epoch_i, str(self.config.result_mode))
+                ckpt_path = os.path.join(self.config.save_dir, checkpint_name)
                 tqdm.write(f'Save parameters at {ckpt_path}')
                 torch.save(self.model.state_dict(), ckpt_path)
 
@@ -240,14 +241,14 @@ class Solver(object):
 
             # output 
             predicts = self.model(features.detach()) # [batch_size,]
-            out_list.append(predicts.item())
-            date_list.append(date[0]) 
-            target_list.append(ground_truth.item())
+            #out_list.append(predicts.item())
+            #date_list.append(date) 
+            #target_list.append(ground_truth.item())
 
             # loss calculation 
             entropy_loss_function = self.MSE_loss() 
             entropy_loss = entropy_loss_function(predicts, ground_truth)
-            tqdm.write(f'entropy loss {entropy_loss.item():.3f}')
+            tqdm.write(f'date {date}, entropy loss {entropy_loss.item():.3f}')
 
             # batch loss record 
             loss_history.append(entropy_loss.data)  
@@ -257,9 +258,9 @@ class Solver(object):
 
         # tesorboard plotting 
         print('avg_evaluation_loss is {}'.format(e_loss))
-        print('predict', out_list)
-        print('target', target_list)
-        print('date', date_list)
+        #print('predict', out_list)
+        #print('target', target_list)
+        #print('date', date_list)
 
 if __name__ == '__main__':
     config = get_config()

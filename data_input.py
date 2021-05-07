@@ -1,13 +1,8 @@
 # -*- coding: utf-8 -*-
-#import tensorflow as tf
 import pandas as pd
-#print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
-from collections import defaultdict
-import itertools
-from sklearn.preprocessing import MinMaxScaler
-import os
-import math
-import numpy as np
+#from collections import defaultdict
+#import itertools
+#from sklearn.preprocessing import MinMaxScaler
 
 # term structure
 def main():
@@ -211,6 +206,8 @@ def main():
     ##output
     df_final_combine.to_pickle('./vix_future_preprocessed.pkl')
     print('completed')
+
+
 
 
 def main_new():
@@ -491,7 +488,12 @@ def main_new():
 if __name__ == "__main__":
     # main()
     # main_new()
-    all_data = pd.read_pickle('./vix_future_preprocessed_new.pkl')
-    # print(all_data)
-    date = all_data.loc[:, 'date'].values
-    print(date)
+    import torch
+    import torchvision
+    print(torch.cuda.is_available())
+
+    a = torch.Tensor(5,3)
+    a=a.cuda()
+    print(a)
+
+    print(torch.cuda.device_count())
