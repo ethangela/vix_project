@@ -488,12 +488,5 @@ def main_new():
 if __name__ == "__main__":
     # main()
     # main_new()
-    import torch
-    import torchvision
-    print(torch.cuda.is_available())
-
-    a = torch.Tensor(5,3)
-    a=a.cuda()
-    print(a)
-
-    print(torch.cuda.device_count())
+    all_data = pd.read_pickle('./vix_future_preprocessed_new.pkl')
+    print(all_data)

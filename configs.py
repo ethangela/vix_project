@@ -40,9 +40,9 @@ def get_config(parse=True, **optional_kwargs):
     # parser.add_argument('--attention_mode', type=str2bool, default='true')
     parser.add_argument('--input_size', type=int, default=49)
     parser.add_argument('--num_layers', type=int, default=2)###
-    parser.add_argument('--lstm_hidden_size', type=int, default=180)###
-    parser.add_argument('--full_hidden_size1', type=int, default=60)###
-    parser.add_argument('--full_hidden_size2', type=int, default=10)
+    parser.add_argument('--lstm_hidden_size', type=int, default=180)###180
+    parser.add_argument('--full_hidden_size1', type=int, default=60)###60
+    parser.add_argument('--full_hidden_size2', type=int, default=10)###10
 
     # Train
     parser.add_argument('--mode', type=str, default='train') 
@@ -52,9 +52,9 @@ def get_config(parse=True, **optional_kwargs):
     parser.add_argument('--clip', type=float, default=5.0) 
     parser.add_argument('--lr', type=float, default=0.001)
     parser.add_argument('--batch_size', type=int, default=66) ###
-    parser.add_argument('--sequence_length', type=int, default=44) ###
-    parser.add_argument('--test_ratio', type=float, default=0.2) 
-    parser.add_argument('--drop_rate', type=float, default=0) ###
+    parser.add_argument('--sequence_length', type=int, default=66) ###
+    parser.add_argument('--test_ratio', type=float, default=0.25) 
+    parser.add_argument('--drop_rate', type=float, default=0.0) ###
 
     if parse:
         kwargs = parser.parse_args()
