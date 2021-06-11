@@ -34,14 +34,14 @@ def get_config(parse=True, **optional_kwargs):
     parser.add_argument('--verbose', type=str2bool, default='true')
     parser.add_argument('--pickle_path', type=str, default='./vix_future_preprocessed_july.pkl')
     parser.add_argument('--save_dir', type=str, default='./checkpoint/') 
-    parser.add_argument('--ckpt_path', type=str, default='epoch_500_gt1.pkl')
+    parser.add_argument('--ckpt_path', type=str, default='test_01_seq_22_lay_1_hid1_12_ful1_2_ful2_0_epoch_150_gt1.pkl')
 
     # Model
     # parser.add_argument('--attention_mode', type=str2bool, default='true')
     parser.add_argument('--input_size', type=int, default=118)
     parser.add_argument('--num_layers', type=int, default=1)###
-    parser.add_argument('--lstm_hidden_size', type=int, default=15)###180
-    parser.add_argument('--full_hidden_size1', type=int, default=3)###60
+    parser.add_argument('--lstm_hidden_size', type=int, default=12)###180
+    parser.add_argument('--full_hidden_size1', type=int, default=2)###60
     parser.add_argument('--full_hidden_size2', type=int, default=0)###10
 
     # Train
