@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 import pandas as pd
-#from collections import defaultdict
-#import itertools
-#from sklearn.preprocessing import MinMaxScaler
+from collections import defaultdict
+import itertools
+from sklearn.preprocessing import MinMaxScaler
+import os
+import math
+import numpy as np
 
 # term structure
 def main():
@@ -211,7 +214,7 @@ def main():
 
 
 def main_new():
-    ## new vix project ##     
+    new vix project ##     
     
     # term structure
     mth_code = {'VXF':1, 'VXG':2, 'VXH':3, 'VXJ':4, 'VXK':5, 'VXM':6, 'VXN':7, 'VXQ':8, 'VXU':9, 'VXV':10, 'VXX':11, 'VXZ':12}
@@ -246,7 +249,9 @@ def main_new():
                             except:
                                 settle_close = math.nan   
                             df_dic['m_{}_close'.format(trm_mth)] = settle_close
-                            df_dic['m_{}_hl'.format(trm_mth)] = intraday_high - intraday_low
+                            df_dic['m_{}_hl'.format(trm_mth)] = intraday_high - intraday_low  
+                            df_dic['m_{}_high'.format(trm_mth)] = intraday_high
+                            df_dic['m_{}_low'.format(trm_mth)] = intraday_low
                 elif curt_mth < 5 and mth_code[futures[0][:3]] != 1:
                     if mth_code[futures[0][:3]] == curt_mth:
                         for future in futures: #default 8
@@ -267,7 +272,9 @@ def main_new():
                             except:
                                 settle_close = math.nan   
                             df_dic['m_{}_close'.format(trm_mth)] = settle_close
-                            df_dic['m_{}_hl'.format(trm_mth)] = intraday_high - intraday_low
+                            df_dic['m_{}_hl'.format(trm_mth)] = intraday_high - intraday_low  
+                            df_dic['m_{}_high'.format(trm_mth)] = intraday_high
+                            df_dic['m_{}_low'.format(trm_mth)] = intraday_low
                     else:
                         for future in futures:
                             fut_mth = mth_code[future[:3]] 
@@ -285,7 +292,9 @@ def main_new():
                             except:
                                 settle_close = math.nan     
                             df_dic['m_{}_close'.format(trm_mth)] = settle_close
-                            df_dic['m_{}_hl'.format(trm_mth)] = intraday_high - intraday_low
+                            df_dic['m_{}_hl'.format(trm_mth)] = intraday_high - intraday_low  
+                            df_dic['m_{}_high'.format(trm_mth)] = intraday_high
+                            df_dic['m_{}_low'.format(trm_mth)] = intraday_low
                 else:
                     if curt_mth in [mth_code[x[:3]] for x in futures]:
                         for future in futures:
@@ -304,7 +313,9 @@ def main_new():
                             except:
                                 settle_close = math.nan   
                             df_dic['m_{}_close'.format(trm_mth)] = settle_close
-                            df_dic['m_{}_hl'.format(trm_mth)] = intraday_high - intraday_low
+                            df_dic['m_{}_hl'.format(trm_mth)] = intraday_high - intraday_low  
+                            df_dic['m_{}_high'.format(trm_mth)] = intraday_high
+                            df_dic['m_{}_low'.format(trm_mth)] = intraday_low
                     else:
                         for future in futures:
                             fut_mth = mth_code[future[:3]] 
@@ -322,7 +333,9 @@ def main_new():
                             except:
                                 settle_close = math.nan   
                             df_dic['m_{}_close'.format(trm_mth)] = settle_close
-                            df_dic['m_{}_hl'.format(trm_mth)] = intraday_high - intraday_low   
+                            df_dic['m_{}_hl'.format(trm_mth)] = intraday_high - intraday_low  
+                            df_dic['m_{}_high'.format(trm_mth)] = intraday_high
+                            df_dic['m_{}_low'.format(trm_mth)] = intraday_low   
                 
                 if c == 0:
                     df_final = pd.DataFrame([df_dic])
@@ -335,99 +348,414 @@ def main_new():
         df_final.loc[:,'m_{}-{}'.format(pair[0],pair[1])] = df_final['m_{}_close'.format(pair[0])] - df_final['m_{}_close'.format(pair[1])] 
     for i in range(2,9):
         df_final = df_final.drop(columns=['m_{}_close'.format(i)])
+        df_final = df_final.drop(columns=['m_{}_high'.format(i)])
+        df_final = df_final.drop(columns=['m_{}_low'.format(i)])
     df_final = df_final.fillna(method='ffill')
-    #print(df_final)
+    print(df_final)
+    df_final.to_pickle('./vix_future_tmp_1.pkl')
     
 
 
-    #technical variables
+    # #technical variables for 1mth vix future AND vix OR/AND vvix
+    df_final = pd.read_pickle('./vix_future_tmp_1.pkl')
     xls = pd.ExcelFile('./VIX_2011-2021.xlsx')
     df_vix = pd.read_excel(xls, header=0)
+    invalid_date_due_to_vix = []
     for date in df_final['date'].tolist():
-        if len(df_vix[df_vix['date'] == date]['vix'].values) != 0:
+        if len(df_vix[df_vix['date'] == date]['close'].values) != 0:
             continue
         else:
-            print('invalid vix date: {}'.format(date))
+            invalid_date_due_to_vix.append(date)
             df_final = df_final.drop(df_final[df_final['date'] == date].index)
     df_final = df_final.reset_index(drop=True)
+    print('invalid_date_due_to_vix: {}'.format(invalid_date_due_to_vix))
+
     
-    def prior_avg(datafarme, date, day):
+    def prior_avg(datafarme, column, date, day):
         idx = datafarme[datafarme['date'] == date].index[0]
         sum_ = 0
-        for i in range(idx-day,idx-1):
-            sum_ += datafarme.loc[i]['vix']
+        for i in range(idx-day+1,idx+1):
+            sum_ += datafarme.loc[i][column]
         avg = sum_/day
         return avg
     
-    def avg_above(datafarme, date, day):
-        avg = prior_avg(datafarme, date, day)
-        spot = datafarme[datafarme['date'] == date]['vix'].values[0]
-        result = spot - avg > 0
-        return 1 if result else 0
-
-    def avg_below(datafarme, date, day):
-        avg = prior_avg(datafarme, date, day)
-        spot = datafarme[datafarme['date'] == date]['vix'].values[0]
-        result = spot - avg < 0
-        return 1 if result else 0
-    
-    def three_day_above(datafarme, date, day):
+    def avg_move(datafarme, column, date, day, type_):
+        avg = prior_avg(datafarme, column, date, day)
+        spot = datafarme[datafarme['date'] == date][column].values[0]
+        if type_ == 'above':
+            result = spot - avg > 0
+            return 1 if result else 0
+        elif type_ == 'below':
+            result = spot - avg < 0
+            return 1 if result else 0
+            
+    def avg_three_day_move(datafarme, column, date, day, type_):
         idx = datafarme.index[datafarme['date']==date].tolist()[0]
-        d1 = avg_above(datafarme, datafarme.iloc[idx-1]['date'], day)
-        d2 = avg_above(datafarme, datafarme.iloc[idx-2]['date'], day)
-        d3 = avg_above(datafarme, datafarme.iloc[idx-3]['date'], day)
-        if d1 == d2 == d3 == 1:
-            return 1
-        else:
-            return 0
+        if type_ == 'above':
+            d1 = avg_move(datafarme, column, datafarme.iloc[idx-1]['date'], day, type_)
+            d2 = avg_move(datafarme, column, datafarme.iloc[idx-2]['date'], day, type_)
+            d3 = avg_move(datafarme, column, datafarme.iloc[idx-3]['date'], day, type_)
+            if d1 == d2 == d3 == 1:
+                return 1
+            else:
+                return 0
+        elif type_ == 'below':
+            d1 = avg_move(datafarme, column, datafarme.iloc[idx-1]['date'], day, type_)
+            d2 = avg_move(datafarme, column, datafarme.iloc[idx-2]['date'], day, type_)
+            d3 = avg_move(datafarme, column, datafarme.iloc[idx-3]['date'], day, type_)
+            if d1 == d2 == d3 == 1:
+                return 1
+            else:
+                return 0
 
-    def bollinger_bands(datafarme, date, type_):
-        spot = datafarme[datafarme['date'] == date]['vix'].values[0]
-        avg = prior_avg(datafarme, date, 21)
+    def bollinger_bands_move(datafarme, column, date, type_):
+        spot = datafarme[datafarme['date'] == date][column].values[0]
+        avg = prior_avg(datafarme, column, date, 21)
         idx = datafarme.index[datafarme['date']==date].tolist()[0]
-        std = datafarme.iloc[idx-21:idx]['vix'].std()
+        std = datafarme.iloc[idx-21:idx][column].std()
         if type_ == 'above':
             return 1 if spot > avg+2*std else 0
         elif type_ == 'below':
             return 1 if spot < avg-2*std else 0
 
-    p_14_above, p_50_above, p_100_above = [], [], []
-    p_14_below, p_50_below, p_100_below = [], [], []
-    p_14_3day_above, p_50_3day_above, p_100_3day_above = [], [], []
-    bollinger_bands_above, bollinger_bands_below = [], []
-    
-    for date in df_final['date'].tolist()[103:]:
-        p_14_above.append(avg_above(df_vix, date, 14))
-        p_50_above.append(avg_above(df_vix, date, 50))
-        p_100_above.append(avg_above(df_vix, date, 100))
-        p_14_below.append(avg_below(df_vix, date, 14))
-        p_50_below.append(avg_below(df_vix, date, 50))
-        p_100_below.append(avg_below(df_vix, date, 100))
-        p_14_3day_above.append(three_day_above(df_vix, date, 14))
-        p_50_3day_above.append(three_day_above(df_vix, date, 50))
-        p_100_3day_above.append(three_day_above(df_vix, date, 100))
-        bollinger_bands_above.append(bollinger_bands(df_vix, date, 'above'))
-        bollinger_bands_below.append(bollinger_bands(df_vix, date, 'below'))
+    def exponential_avg(datafarme, column, date, day):
+        idx = datafarme.index[datafarme['date']==date].tolist()[0]
+        avg_t_1 = prior_avg(datafarme, column, datafarme.iloc[idx-1]['date'], day)
+        spot = datafarme[datafarme['date'] == date][column].values[0]
+        exp = (spot - avg_t_1) * 2 / (day+1) + avg_t_1
+        return exp
 
-    df_final = df_final.iloc[103:]
-    df_final = df_final.reset_index(drop=True)
-    assert len(df_final) == len(p_14_above) == len(p_100_3day_above)
-    df_final.loc[:,'p_14_above'] = p_14_above
-    df_final.loc[:,'p_50_above'] = p_50_above
-    df_final.loc[:,'p_100_above'] = p_100_above
-    df_final.loc[:,'p_14_below'] = p_14_below
-    df_final.loc[:,'p_50_below'] = p_50_below
-    df_final.loc[:,'p_100_below'] = p_100_below
-    df_final.loc[:,'p_14_3day_above'] = p_14_3day_above
-    df_final.loc[:,'p_50_3day_above'] = p_50_3day_above
-    df_final.loc[:,'p_100_3day_above'] = p_100_3day_above
-    df_final.loc[:,'BB_above'] = bollinger_bands_above
-    df_final.loc[:,'BB_below'] = bollinger_bands_below
-    # print(df_final.head(50))
+    def exponential_avg_move(datafarme, column, date, day, type_):
+        exp_avg = exponential_avg(datafarme, column, date, day)
+        spot = datafarme[datafarme['date'] == date][column].values[0]
+        if type_ == 'above':
+            result = spot - exp_avg > 0
+            return 1 if result else 0
+        elif type_ == 'below':
+            result = spot - exp_avg < 0
+            return 1 if result else 0
+
+    def disparity(datafarme, column, date, day):
+        avg = prior_avg(datafarme, column, date, day)
+        spot = datafarme[datafarme['date'] == date][column].values[0]
+        return spot / avg * 100
     
+    def disparity_move(datafarme, column, date, day, type_):
+        disp_today = disparity(datafarme, column, date, day)
+        idx = datafarme.index[datafarme['date']==date].tolist()[0]
+        disp_yesterday = disparity(datafarme, column, datafarme.iloc[idx-1]['date'], day)
+        if type_ == 'above':
+            result = disp_today - disp_yesterday > 0
+            return 1 if result else 0
+        elif type_ == 'below':
+            result = disp_today - disp_yesterday < 0
+            return 1 if result else 0
+
+    def momentum1(datafarme, column, date):
+        spot = datafarme[datafarme['date'] == date][column].values[0]
+        idx = datafarme.index[datafarme['date']==date].tolist()[0]
+        prior = datafarme.iloc[idx-5][column]#.values[0]
+        return spot / prior * 100
+
+    def momentum2(datafarme, column, date):
+        spot = datafarme[datafarme['date'] == date][column].values[0]
+        idx = datafarme.index[datafarme['date']==date].tolist()[0]
+        prior = datafarme.iloc[idx-5][column]#.values[0]
+        return (spot - prior + 0.001) * 100
+
+    def ROC(datafarme, column, date):
+        spot = datafarme[datafarme['date'] == date][column].values[0]
+        mtm = momentum2(datafarme, column, date)
+        return spot / mtm * 100
+
+    def ROC_move(datafarme, column, date, type_):
+        roc_today = ROC(datafarme, column, date)
+        idx = datafarme.index[datafarme['date']==date].tolist()[0]
+        roc_yesterday = ROC(datafarme, column, datafarme.iloc[idx-1]['date'])
+        if type_ == 'above':
+            result = roc_today - roc_yesterday > 0
+            return 1 if result else 0
+        elif type_ == 'below':
+            result = roc_today - roc_yesterday < 0
+            return 1 if result else 0
+
+    def stochastic_william(datafarme, column, date, day=14, type_='william'):
+        idx = datafarme[datafarme['date'] == date].index[0]
+        spot = datafarme[datafarme['date'] == date][column+'close'].values[0]
+        highest_high = -99
+        lowest_low = 99
+        for i in range(idx-day+1,idx+1):
+            if datafarme.loc[i][column+'high'] > highest_high:
+                highest_high = datafarme.loc[i][column+'high']
+            if datafarme.loc[i][column+'low'] < lowest_low:
+                lowest_low = datafarme.loc[i][column+'low']
+        if type_ == 'william':
+            return (highest_high-spot) / (highest_high-lowest_low)
+        elif type_ == 'stochastic':
+            return (spot-lowest_low) / (highest_high-lowest_low) * 100
+            
+
+    vix_p_3_avg, vix_p_5_avg, vix_p_10_avg = [], [], []
+    vix_p_3_above, vix_p_5_above, vix_p_10_above = [], [], []
+    vix_p_3_below, vix_p_5_below, vix_p_10_below = [], [], []
+    vix_p_3_above_3d, vix_p_5_above_3d, vix_p_10_above_3d = [], [], []
+    vix_p_3_below_3d, vix_p_5_below_3d, vix_p_10_below_3d = [], [], []
+    vix_bollinger_bands_above, vix_bollinger_bands_below = [], []
+    vix_p_3_exp_avg, vix_p_5_exp_avg, vix_p_10_exp_avg = [], [], []
+    vix_p_3_exp_above, vix_p_5_exp_above, vix_p_10_exp_above = [], [], []
+    vix_p_3_exp_below, vix_p_5_exp_below, vix_p_10_exp_below = [], [], []
+    vix_disp_3, vix_disp_5 = [], []
+    vix_disp_3_above, vix_disp_5_above = [], []
+    vix_disp_3_below, vix_disp_5_below = [], []
+    vix_mom1_5, vix_mom2_5 = [], []
+    vix_roc, vix_roc_above, vix_roc_below = [], [], []
+    vix_william = []
+    vix_stochastic = []
+
+
+    fut_p_3_avg, fut_p_5_avg, fut_p_10_avg = [], [], []
+    fut_p_3_above, fut_p_5_above, fut_p_10_above = [], [], []
+    fut_p_3_below, fut_p_5_below, fut_p_10_below = [], [], []
+    fut_p_3_above_3d, fut_p_5_above_3d, fut_p_10_above_3d = [], [], []
+    fut_p_3_below_3d, fut_p_5_below_3d, fut_p_10_below_3d = [], [], []
+    fut_bollinger_bands_above, fut_bollinger_bands_below = [], []
+    fut_p_3_exp_avg, fut_p_5_exp_avg, fut_p_10_exp_avg = [], [], []
+    fut_p_3_exp_above, fut_p_5_exp_above, fut_p_10_exp_above = [], [], []
+    fut_p_3_exp_below, fut_p_5_exp_below, fut_p_10_exp_below = [], [], []
+    fut_disp_3, fut_disp_5 = [], []
+    fut_disp_3_above, fut_disp_5_above = [], []
+    fut_disp_3_below, fut_disp_5_below = [], []
+    fut_mom1_5, fut_mom2_5 = [], []
+    fut_roc, fut_roc_above, fut_roc_below = [], [], []
+    fut_william = []
+    fut_stochastic = []
+
+
+    for date in df_final['date'].tolist()[20:]: 
+        #moving average
+        vix_p_3_avg.append(prior_avg(df_vix, 'close', date, 3))
+        vix_p_5_avg.append(prior_avg(df_vix, 'close', date, 5))
+        vix_p_10_avg.append(prior_avg(df_vix, 'close', date, 10))
+
+        fut_p_3_avg.append(prior_avg(df_final, 'm_1_close', date, 3))
+        fut_p_5_avg.append(prior_avg(df_final, 'm_1_close', date, 5))
+        fut_p_10_avg.append(prior_avg(df_final, 'm_1_close', date, 10))
+        
+        #moving average move
+        vix_p_3_above.append(avg_move(df_vix, 'close', date, 3, 'above'))
+        vix_p_5_above.append(avg_move(df_vix, 'close', date, 5, 'above'))
+        vix_p_10_above.append(avg_move(df_vix, 'close', date, 10, 'above'))
+        vix_p_3_below.append(avg_move(df_vix, 'close', date, 3, 'below'))
+        vix_p_5_below.append(avg_move(df_vix, 'close', date, 5, 'below'))
+        vix_p_10_below.append(avg_move(df_vix, 'close', date, 10, 'below'))
+        vix_p_3_above_3d.append(avg_three_day_move(df_vix, 'close', date, 3, 'above'))
+        vix_p_5_above_3d.append(avg_three_day_move(df_vix, 'close', date, 5, 'above'))
+        vix_p_10_above_3d.append(avg_three_day_move(df_vix, 'close', date, 10, 'above'))
+        vix_p_3_below_3d.append(avg_three_day_move(df_vix, 'close', date, 3, 'below'))
+        vix_p_5_below_3d.append(avg_three_day_move(df_vix, 'close', date, 5, 'below'))
+        vix_p_10_below_3d.append(avg_three_day_move(df_vix, 'close', date, 10, 'below'))
+
+        fut_p_3_above.append(avg_move(df_final, 'm_1_close', date, 3, 'above'))
+        fut_p_5_above.append(avg_move(df_final, 'm_1_close', date, 5, 'above'))
+        fut_p_10_above.append(avg_move(df_final, 'm_1_close', date, 10, 'above'))
+        fut_p_3_below.append(avg_move(df_final, 'm_1_close', date, 3, 'below'))
+        fut_p_5_below.append(avg_move(df_final, 'm_1_close', date, 5, 'below'))
+        fut_p_10_below.append(avg_move(df_final, 'm_1_close', date, 10, 'below'))
+        fut_p_3_above_3d.append(avg_three_day_move(df_final, 'm_1_close', date, 3, 'above'))
+        fut_p_5_above_3d.append(avg_three_day_move(df_final, 'm_1_close', date, 5, 'above'))
+        fut_p_10_above_3d.append(avg_three_day_move(df_final, 'm_1_close', date, 10, 'above'))
+        fut_p_3_below_3d.append(avg_three_day_move(df_final, 'm_1_close', date, 3, 'below'))
+        fut_p_5_below_3d.append(avg_three_day_move(df_final, 'm_1_close', date, 5, 'below'))
+        fut_p_10_below_3d.append(avg_three_day_move(df_final, 'm_1_close', date, 10, 'below'))
+
+
+        #bollinger band move
+        vix_bollinger_bands_above.append(bollinger_bands_move(df_vix, 'close', date, 'above'))
+        vix_bollinger_bands_below.append(bollinger_bands_move(df_vix, 'close', date, 'below'))
+
+        fut_bollinger_bands_above.append(bollinger_bands_move(df_final, 'm_1_close', date, 'above'))
+        fut_bollinger_bands_below.append(bollinger_bands_move(df_final, 'm_1_close', date, 'below'))
+
+
+        #exponential moving average
+        vix_p_3_exp_avg.append(exponential_avg(df_vix, 'close', date, 3))
+        vix_p_5_exp_avg.append(exponential_avg(df_vix, 'close', date, 5))
+        vix_p_10_exp_avg.append(exponential_avg(df_vix, 'close', date, 10))
+        
+        fut_p_3_exp_avg.append(exponential_avg(df_final, 'm_1_close', date, 3))
+        fut_p_5_exp_avg.append(exponential_avg(df_final, 'm_1_close', date, 5))
+        fut_p_10_exp_avg.append(exponential_avg(df_final, 'm_1_close', date, 10))
+        
+
+        #exponential moving average move
+        vix_p_3_exp_above.append(exponential_avg_move(df_vix, 'close', date, 3, 'above'))
+        vix_p_5_exp_above.append(exponential_avg_move(df_vix, 'close', date, 5, 'above'))
+        vix_p_10_exp_above.append(exponential_avg_move(df_vix, 'close', date, 10, 'above'))
+        vix_p_3_exp_below.append(exponential_avg_move(df_vix, 'close', date, 3, 'below'))
+        vix_p_5_exp_below.append(exponential_avg_move(df_vix, 'close', date, 5, 'below'))
+        vix_p_10_exp_below.append(exponential_avg_move(df_vix, 'close', date, 10, 'below'))
+        
+        fut_p_3_exp_above.append(exponential_avg_move(df_final, 'm_1_close', date, 3, 'above'))
+        fut_p_5_exp_above.append(exponential_avg_move(df_final, 'm_1_close', date, 5, 'above'))
+        fut_p_10_exp_above.append(exponential_avg_move(df_final, 'm_1_close', date, 10, 'above'))
+        fut_p_3_exp_below.append(exponential_avg_move(df_final, 'm_1_close', date, 3, 'below'))
+        fut_p_5_exp_below.append(exponential_avg_move(df_final, 'm_1_close', date, 5, 'below'))
+        fut_p_10_exp_below.append(exponential_avg_move(df_final, 'm_1_close', date, 10, 'below'))
+        
+        
+        #disparity
+        vix_disp_3.append(disparity(df_vix, 'close', date, 3))
+        vix_disp_5.append(disparity(df_vix, 'close', date, 5))
+        
+        fut_disp_3.append(disparity(df_final, 'm_1_close', date, 3))
+        fut_disp_5.append(disparity(df_final, 'm_1_close', date, 5))
+
+
+        #disparity move
+        vix_disp_3_above.append(disparity_move(df_vix, 'close', date, 3, 'above'))
+        vix_disp_5_above.append(disparity_move(df_vix, 'close', date, 5, 'above'))
+        vix_disp_3_below.append(disparity_move(df_vix, 'close', date, 3, 'below'))
+        vix_disp_5_below.append(disparity_move(df_vix, 'close', date, 5, 'below'))
+        
+        fut_disp_3_above.append(disparity_move(df_final, 'm_1_close', date, 3, 'above'))
+        fut_disp_5_above.append(disparity_move(df_final, 'm_1_close', date, 5, 'above'))
+        fut_disp_3_below.append(disparity_move(df_final, 'm_1_close', date, 3, 'below'))
+        fut_disp_5_below.append(disparity_move(df_final, 'm_1_close', date, 5, 'below'))
+
+
+        #momentum1
+        vix_mom1_5.append(momentum1(df_vix, 'close', date))
+        fut_mom1_5.append(momentum1(df_final, 'm_1_close', date))
+
+
+        #momentum2
+        vix_mom2_5.append(momentum2(df_vix, 'close', date))
+        fut_mom2_5.append(momentum2(df_final, 'm_1_close', date))
+
+
+        #ROC
+        vix_roc.append(ROC(df_vix, 'close', date))
+        fut_roc.append(ROC(df_final, 'm_1_close', date))
+        
+
+        #ROC move
+        vix_roc_above.append(ROC_move(df_vix, 'close', date, 'above'))
+        vix_roc_below.append(ROC_move(df_vix, 'close', date, 'below'))
+        
+        fut_roc_above.append(ROC_move(df_final, 'm_1_close', date, 'above'))
+        fut_roc_below.append(ROC_move(df_final, 'm_1_close', date, 'below'))
+
+
+        #william %R
+        vix_william.append(stochastic_william(df_vix, '', date, day=14, type_='william'))
+        fut_william.append(stochastic_william(df_final, 'm_1_', date, day=14, type_='william'))
+        
+        #stochastic oscillator
+        vix_stochastic.append(stochastic_william(df_vix, '', date, day=14, type_='stochastic'))
+        fut_stochastic.append(stochastic_william(df_final, 'm_1_', date, day=14, type_='stochastic'))
+        
+
+    df_final = df_final.iloc[20:]
+    df_final = df_final.reset_index(drop=True)
+
+    df_final.loc[:,'vix_p_3_avg'] = vix_p_3_avg
+    df_final.loc[:,'vix_p_5_avg'] = vix_p_5_avg
+    df_final.loc[:,'vix_p_10_avg'] = vix_p_10_avg
+    df_final.loc[:,'vix_p_3_above'] = vix_p_3_above
+    df_final.loc[:,'vix_p_5_above'] = vix_p_5_above
+    df_final.loc[:,'vix_p_10_above'] = vix_p_10_above
+    df_final.loc[:,'vix_p_3_below'] = vix_p_3_below
+    df_final.loc[:,'vix_p_5_below'] = vix_p_5_below
+    df_final.loc[:,'vix_p_10_below'] = vix_p_10_below
+    df_final.loc[:,'fut_p_3_avg'] = fut_p_3_avg
+    df_final.loc[:,'fut_p_5_avg'] = fut_p_5_avg
+    df_final.loc[:,'fut_p_10_avg'] = fut_p_10_avg
+    df_final.loc[:,'fut_p_3_above'] = fut_p_3_above
+    df_final.loc[:,'fut_p_5_above'] = fut_p_5_above
+    df_final.loc[:,'fut_p_10_above'] = fut_p_10_above
+    df_final.loc[:,'fut_p_3_below'] = fut_p_3_below
+    df_final.loc[:,'fut_p_5_below'] = fut_p_5_below
+    df_final.loc[:,'fut_p_10_below'] = fut_p_10_below
+    
+    df_final.loc[:,'vix_p_3_3day_above'] = vix_p_3_above_3d
+    df_final.loc[:,'vix_p_5_3day_above'] = vix_p_5_above_3d
+    df_final.loc[:,'vix_p_10_3day_above'] = vix_p_10_above_3d
+    df_final.loc[:,'vix_p_3_3day_below'] = vix_p_3_below_3d
+    df_final.loc[:,'vix_p_5_3day_below'] = vix_p_5_below_3d
+    df_final.loc[:,'vix_p_10_3day_below'] = vix_p_10_below_3d
+    df_final.loc[:,'fut_p_3_3day_above'] = fut_p_3_above_3d
+    df_final.loc[:,'fut_p_5_3day_above'] = fut_p_5_above_3d
+    df_final.loc[:,'fut_p_10_3day_above'] = fut_p_10_above_3d
+    df_final.loc[:,'fut_p_3_3day_below'] = fut_p_3_below_3d
+    df_final.loc[:,'fut_p_5_3day_below'] = fut_p_5_below_3d
+    df_final.loc[:,'fut_p_10_3day_below'] = fut_p_10_below_3d
+
+    df_final.loc[:,'vix_p_3_exp_avg'] = vix_p_3_exp_avg
+    df_final.loc[:,'vix_p_5_exp_avg'] = vix_p_5_exp_avg
+    df_final.loc[:,'vix_p_10_exp_avg'] = vix_p_10_exp_avg
+    df_final.loc[:,'vix_p_3_exp_above'] = vix_p_3_exp_above
+    df_final.loc[:,'vix_p_5_exp_above'] = vix_p_5_exp_above
+    df_final.loc[:,'vix_p_10_exp_above'] = vix_p_10_exp_above
+    df_final.loc[:,'vix_p_3_exp_below'] = vix_p_3_exp_below
+    df_final.loc[:,'vix_p_5_exp_below'] = vix_p_5_exp_below
+    df_final.loc[:,'vix_p_10_exp_below'] = vix_p_10_exp_below
+    df_final.loc[:,'fut_p_3_exp_avg'] = fut_p_3_exp_avg
+    df_final.loc[:,'fut_p_5_exp_avg'] = fut_p_5_exp_avg
+    df_final.loc[:,'fut_p_10_exp_avg'] = fut_p_10_exp_avg
+    df_final.loc[:,'fut_p_3_exp_above'] = fut_p_3_exp_above
+    df_final.loc[:,'fut_p_5_exp_above'] = fut_p_5_exp_above
+    df_final.loc[:,'fut_p_10_exp_above'] = fut_p_10_exp_above
+    df_final.loc[:,'fut_p_3_exp_below'] = fut_p_3_exp_below
+    df_final.loc[:,'fut_p_5_exp_below'] = fut_p_5_exp_below
+    df_final.loc[:,'fut_p_10_exp_below'] = fut_p_10_exp_below
+
+    df_final.loc[:,'vix_BB_above'] = vix_bollinger_bands_above
+    df_final.loc[:,'vix_BB_below'] = vix_bollinger_bands_below
+    df_final.loc[:,'fut_BB_above'] = fut_bollinger_bands_above
+    df_final.loc[:,'fut_BB_below'] = fut_bollinger_bands_below
+
+    df_final.loc[:,'vix_disp3_avg'] = vix_disp_3
+    df_final.loc[:,'vix_disp5_avg'] = vix_disp_5
+    df_final.loc[:,'vix_disp3_above'] = vix_disp_3_above
+    df_final.loc[:,'vix_disp5_above'] = vix_disp_5_above
+    df_final.loc[:,'vix_disp3_below'] = vix_disp_3_below
+    df_final.loc[:,'vix_disp5_below'] = vix_disp_5_below
+    df_final.loc[:,'fut_disp3_avg'] = fut_disp_3
+    df_final.loc[:,'fut_disp5_avg'] = fut_disp_5
+    df_final.loc[:,'fut_disp3_above'] = fut_disp_3_above
+    df_final.loc[:,'fut_disp5_above'] = fut_disp_5_above
+    df_final.loc[:,'fut_disp3_below'] = fut_disp_3_below
+    df_final.loc[:,'fut_disp5_below'] = fut_disp_5_below
+
+    df_final.loc[:,'vix_momentum1'] = vix_mom1_5
+    df_final.loc[:,'vix_momentum2'] = vix_mom2_5
+    df_final.loc[:,'vix_roc'] = vix_roc
+    df_final.loc[:,'vix_roc_above'] = vix_roc_above
+    df_final.loc[:,'vix_roc_below'] = vix_roc_below
+    df_final.loc[:,'fut_momentum1'] = fut_mom1_5
+    df_final.loc[:,'fut_momentum2'] = fut_mom2_5
+    df_final.loc[:,'fut_roc'] = fut_roc
+    df_final.loc[:,'fut_roc_above'] = fut_roc_above
+    df_final.loc[:,'fut_roc_below'] = fut_roc_below
+
+    df_final.loc[:,'vix_william'] = vix_william
+    df_final.loc[:,'vix_stochastic'] = vix_stochastic
+    df_final.loc[:,'fut_william'] = fut_william
+    df_final.loc[:,'fut_stochastic'] = fut_stochastic
+    
+    
+    print(df_final)
+    df_final.to_pickle('./vix_future_tmp_2.pkl')
+
+
+
+
+    
+
 
 
     ##vvix
+    df_final = pd.read_pickle('./vix_future_tmp_2.pkl')
     xls = pd.ExcelFile('./VVIX_2012-2021.xlsx')
     df_vvix = pd.read_excel(xls, header=0)
     df_hl = df_vvix[['high date', 'VVIX high', 'VVIX low']]
@@ -437,18 +765,37 @@ def main_new():
     # print(df_vvix.head(10))    
     vvix = []
     vvix_hl = []
+    # invalid_vvix_date = []
     for date in df_final['date'].tolist():
         if len(df_hl[df_hl['high date'] == date]['vvix_hl'].values) != 0 and len(df_close[df_close['close date'] == date]['VVIX close'].values) != 0:
             vvix_hl.append( df_hl[df_hl['high date'] == date]['vvix_hl'].values[0] )
             vvix.append( df_close[df_close['close date'] == date]['VVIX close'].values[0] )
         else:
             df_final = df_final.drop(df_final[df_final['date'] == date].index)
-            print('invalid vvix date: {}'.format(date))
+            # invalid_vvix_date.append(date)
     df_final.loc[:,'vvix'] = vvix
     df_final.loc[:,'vvix_hl'] = vvix_hl
     df_final = df_final.reset_index(drop=True)
-    print(df_final.tail(10))
+    # print('invalid_vvix_date: {}'.format(invalid_vvix_date))
+
     
+    #rsi
+    xls = pd.ExcelFile('./RSI_data.xlsx')
+    df_rsi = pd.read_excel(xls)
+    # print(df_rsi)
+    d3, d9, d14, d30 = [], [], [], []
+    for date in df_final['date'].tolist():
+        try:
+            d3.append( df_rsi[df_rsi['DATE'] == date]['RSI_3DAY'].values[0] )
+            d9.append( df_rsi[df_rsi['DATE'] == date]['RSI_9DAY'].values[0] )
+            d14.append( df_rsi[df_rsi['DATE'] == date]['RSI_14DAY'].values[0] )
+            d30.append( df_rsi[df_rsi['DATE'] == date]['RSI_30DAY'].values[0] )
+        except:
+            print('invalid rsi date: {}'.format(date))
+    df_final.loc[:,'RSI_3DAY'] = d3
+    df_final.loc[:,'RSI_9DAY'] = d9
+    df_final.loc[:,'RSI_14DAY'] = d14
+    df_final.loc[:,'RSI_30DAY'] = d30
 
 
     ##normalize
@@ -481,12 +828,13 @@ def main_new():
 
 
     ##output
-    df_final.to_pickle('./vix_future_preprocessed_new.pkl')
+    df_final.to_pickle('./vix_future_preprocessed_july.pkl')
     print('completed')
 
 
 if __name__ == "__main__":
     # main()
-    # main_new()
-    all_data = pd.read_pickle('./vix_future_preprocessed_new.pkl')
-    print(all_data)
+    main_new()
+    # all_data = pd.read_pickle('./vix_future_preprocessed_jun.pkl')
+    # print(all_data)
+

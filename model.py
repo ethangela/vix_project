@@ -228,7 +228,8 @@ class Solver(object):
                 os.mkdir(self.config.save_dir)
             test_ratio_inf = ''.join(str(self.config.test_ratio).split('.'))
             if epoch_i%50 == 0:
-                checkpint_name = 'test_{}_seq_{}_epoch_{}_gt{}.pkl'.format(test_ratio_inf, self.config.sequence_length, epoch_i, str(self.config.result_mode))
+                checkpint_name = 'test_{}_seq_{}_lay_{}_hid1_{}_ful1_{}_ful2_{}_epoch_{}_gt{}.pkl'.format(test_ratio_inf, self.config.sequence_length, 
+                self.config.num_layers, self.config.lstm_hidden_size, self.config.full_hidden_size1, self.config.full_hidden_size2, epoch_i, str(self.config.result_mode))
                 ckpt_path = os.path.join(self.config.save_dir, checkpint_name)
                 tqdm.write(f'Save parameters at {ckpt_path}')
                 torch.save(self.model.state_dict(), ckpt_path)
