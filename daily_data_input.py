@@ -6,9 +6,15 @@ from sklearn.preprocessing import MinMaxScaler
 import os
 import math
 import numpy as np
+from daily_configs import get_config
+import pickle
 
 def main_backup(config): 
+    if os.path.isdir(config.pickle_dir) is False:
+        os.mkdir(config.pickle_dir)
+
     # term structure
+    print('Phase 1 started ...')
     mth_code = {'VXF':1, 'VXG':2, 'VXH':3, 'VXJ':4, 'VXK':5, 'VXM':6, 'VXN':7, 'VXQ':8, 'VXU':9, 'VXV':10, 'VXX':11, 'VXZ':12}
     pairs = list(itertools.combinations([8,7,6,5,4,3,2,1], 2))
     c = 0
@@ -147,12 +153,17 @@ def main_backup(config):
         df_final = df_final.drop(columns=['m_{}_high'.format(i)])
         df_final = df_final.drop(columns=['m_{}_low'.format(i)])
     df_final = df_final.fillna(method='ffill')
+    print('Phase 1 completed. Samples shown below:')
+    print(df_final.tail(5))
+    df_final.to_pickle(os.path.join(config.pickle_dir, 'vix_future_backup_phase_1.pkl'))
     
 
 
 
 
     # #technical variables for 1mth vix future AND vix OR/AND vvix
+    print('Phase 2 started ...')
+    df_final = pd.read_pickle(os.path.join(config.pickle_dir, 'vix_future_backup_phase_1.pkl'))
     xls = pd.ExcelFile(config.vix_table_path)
     df_vix = pd.read_excel(xls, header=0)
     invalid_date_due_to_vix = []
@@ -537,12 +548,18 @@ def main_backup(config):
     df_final.loc[:,'vix_stochastic'] = vix_stochastic
     df_final.loc[:,'fut_william'] = fut_william
     df_final.loc[:,'fut_stochastic'] = fut_stochastic
+
+    print('Phase 2 completed. Samples shown below:')
+    print(df_final.tail(5))
+    df_final.to_pickle(os.path.join(config.pickle_dir, 'vix_future_backup_phase_2.pkl'))
     
 
 
 
 
     ##vvix
+    print('Phase 3 started ...')
+    df_final = pd.read_pickle(os.path.join(config.pickle_dir, 'vix_future_backup_phase_2.pkl'))
     xls = pd.ExcelFile(config.vvix_table_path)
     df_vvix = pd.read_excel(xls, header=0)
     df_hl = df_vvix[['high date', 'VVIX high', 'VVIX low']]
@@ -551,18 +568,18 @@ def main_backup(config):
     # print(df_vvix.head(10))    
     vvix = []
     vvix_hl = []
-    # invalid_vvix_date = []
+    invalid_vvix_date = []
     for date in df_final['date'].tolist():
         if len(df_hl[df_hl['high date'] == date]['vvix_hl'].values) != 0 and len(df_close[df_close['close date'] == date]['VVIX close'].values) != 0:
             vvix_hl.append( df_hl[df_hl['high date'] == date]['vvix_hl'].values[0] )
             vvix.append( df_close[df_close['close date'] == date]['VVIX close'].values[0] )
         else:
             df_final = df_final.drop(df_final[df_final['date'] == date].index)
-            # invalid_vvix_date.append(date)
+            invalid_vvix_date.append(date)
     df_final.loc[:,'vvix'] = vvix
     df_final.loc[:,'vvix_hl'] = vvix_hl
     df_final = df_final.reset_index(drop=True)
-    # print('invalid_vvix_date: {}'.format(invalid_vvix_date))
+    print('invalid_date_due_to_vvix: {}'.format(invalid_vvix_date))
 
 
 
@@ -573,6 +590,7 @@ def main_backup(config):
     df_rsi = pd.read_excel(xls)
     # print(df_rsi)
     d3, d9, d14, d30 = [], [], [], []
+    invalid_rsi_date = []
     for date in df_final['date'].tolist():
         try:
             d3.append( df_rsi[df_rsi['DATE'] == date]['RSI_3DAY'].values[0] )
@@ -580,17 +598,25 @@ def main_backup(config):
             d14.append( df_rsi[df_rsi['DATE'] == date]['RSI_14DAY'].values[0] )
             d30.append( df_rsi[df_rsi['DATE'] == date]['RSI_30DAY'].values[0] )
         except:
-            print('invalid rsi date: {}'.format(date))
+            invalid_rsi_date.append(date)
     df_final.loc[:,'RSI_3DAY'] = d3
     df_final.loc[:,'RSI_9DAY'] = d9
     df_final.loc[:,'RSI_14DAY'] = d14
     df_final.loc[:,'RSI_30DAY'] = d30
+    print('invalid_date_due_to_RSI: {}'.format(invalid_rsi_date))
+    print('Phase 3 completed. Samples shown below:')
+    print(df_final.tail(5))
+    save_pickle_path = os.path.join(config.pickle_dir, 'vix_{}_feature_unnorm.pkl'.format(df_final.tail(1)['date'].values[0]))
+    df_final.to_pickle(save_pickle_path)
+    print('Up to date feature (without normlisation and ground truth) generation competed.')
 
 
 
 
 
     ##normalize
+    print('Phase 4 started ...')
+    df_final = pd.read_pickle(os.path.join(config.pickle_dir, 'vix_future_backup_phase_3.pkl'))
     scaler = MinMaxScaler()
     for column in df_final.columns:
         if column != 'date' and column != 'm_1_close':
@@ -623,7 +649,7 @@ def main_backup(config):
     #df_final.drop(df_final.tail(5).index, inplace=True)
     #df_final = df_final.drop(columns=['m_1_close'])
     #df_final = df_final.reset_index(drop=True)
-    print('check:')
+    print('Phase 4 completed. Samples shown below:')
     print(df_final.tail(10))
 
 
@@ -631,11 +657,13 @@ def main_backup(config):
 
 
     ##output
-    if os.path.isdir(config.pickle_dir) is False:
-        os.mkdir(config.pickle_dir)
-    save_pickle_path = os.path.join(config.pickle_dir, 'vix_{}_feature_gt.pkl'.format(config.date))
+    save_pickle_path = os.path.join(config.pickle_dir, 'vix_{}_feature_gt.pkl'.format(df_final.tail(1)['date'].values[0]))
     df_final.to_pickle(save_pickle_path)
-    print('all back up: completed')
+    print('Up to date feature generation completed ! File saved as {}'.format(save_pickle_path))
+
+
+
+
 
 
 
@@ -645,19 +673,25 @@ def main_daily(config):
     # global variables
     prior_day = config.prior_day
     _date_ = config.date
-    year = _date_[:4]
+    print('current date: {}'.format(_date_))
+    _year_ = _date_[:4]
     _month_ = _date_[4:6]
     _day_ = _date_[6:]
 
-    pickle_path = './vix_{}_feature.pkl'.format(prior_day)
+    pickle_path = os.path.join(config.pickle_dir,'vix_{}_feature_unnorm.pkl'.format(prior_day))
+    print('loading past feature from {}'.format(pickle_path))
     df_final = pd.read_pickle(pickle_path)
+    print('asserting if past feautre is up to date ... (if not, the script will terminate and you should change the configuration hyperparameter `feature_generate_mode` as `all`)')
+    assert prior_day == df_final.tail(1)['date'].values[0]
+    print('assertion completed. past features samples are shown below:')
+    print(df_final.tail(5))
 
 
 
     # term structure
     mth_code = {'VXF':1, 'VXG':2, 'VXH':3, 'VXJ':4, 'VXK':5, 'VXM':6, 'VXN':7, 'VXQ':8, 'VXU':9, 'VXV':10, 'VXX':11, 'VXZ':12}
-    subdir = year+'/'+_date_ #2011/20110101
-    b_dates = pd.bdate_range(year+'/01/01', year+'/12/31')
+    subdir = _year_+'/'+_date_ #2011/20110101
+    b_dates = pd.bdate_range(_year_+'/01/01', _year_+'/12/31')
     date = subdir.split('/')[-1]
     if date in b_dates:
         df_dic = {}
@@ -770,7 +804,7 @@ def main_daily(config):
                     df_dic['m_{}_high'.format(trm_mth)] = intraday_high
                     df_dic['m_{}_low'.format(trm_mth)] = intraday_low               
     else:
-        print('the input date is invalid') #TODO: auto terminate
+        print('the input date is invalid') #TODO: auto terminate the script!
     
     pairs = list(itertools.combinations([8,7,6,5,4,3,2,1], 2))
     for pair in pairs:
@@ -1129,6 +1163,7 @@ def main_daily(config):
 
 
 
+
     ##vvix
     xls = pd.ExcelFile(config.vvix_table_path)
     df_vvix = pd.read_excel(xls, header=0)
@@ -1140,6 +1175,7 @@ def main_daily(config):
     
     df_final.iloc[new_data_idx, df_final.columns.get_loc('vvix')] = vvix
     df_final.iloc[new_data_idx, df_final.columns.get_loc('vvix_hl')] = vvix_hl
+
 
 
 
@@ -1158,6 +1194,11 @@ def main_daily(config):
     df_final.iloc[new_data_idx, df_final.columns.get_loc('RSI_14DAY')] = d14
     df_final.iloc[new_data_idx, df_final.columns.get_loc('RSI_30DAY')] = d30
 
+    print('daily feature generation (without normlisation and ground truth) compelted. Samples shown below:')
+    print(df_final.tail(5))
+    save_pickle_path = os.path.join(config.pickle_dir, 'vix_{}_feature_unnorm.pkl'.format(df_final.tail(1)['date'].values[0]))
+    df_final.to_pickle(save_pickle_path)
+
 
 
 
@@ -1168,11 +1209,6 @@ def main_daily(config):
             df_final[column] = scaler.fit_transform(df_final[[column]])
     
 
-
-
-    # ##feature output
-    # df_final.to_pickle('./vix_{}_feature.pkl'.format(_date_))
-    # print('features saving completed')
 
 
 
@@ -1196,19 +1232,19 @@ def main_daily(config):
     df_final.loc[:,'gt_4'] = gt_4
     df_final.loc[:,'gt_5'] = gt_5
 
-    #df_final.drop(df_final.tail(5).index, inplace=True)
-    #df_final = df_final.drop(columns=['m_1_close'])
-    df_final = df_final.reset_index(drop=True)
-    print(df_final.tail(10))
+
 
 
 
     ##output
-    if os.path.isdir(config.pickle_dir) is False:
-        os.mkdir(config.pickle_dir)
-    save_pickle_path = os.path.join(config.pickle_dir, 'vix_{}_feature_gt.pkl'.format(config.date))
+    print('daily features & ground_truths updated !. Samples shown below:')
+    print(df_final.tail(10))
+    save_pickle_path = os.path.join(config.pickle_dir, 'vix_{}_feature_gt.pkl'.format(df_final.tail(1)['date'].values[0]))
     df_final.to_pickle(save_pickle_path)
-    print('daily update: features & ground_truths completed')
+    print('file saved as {}'.format(save_pickle_path))
+
+
+
 
 
 
@@ -1218,8 +1254,5 @@ if __name__ == "__main__":
         print('feature generation may take a while ...')
         main_backup(config)
     else:
+        print('daily feature update started ...')
         main_daily(config)
-
-
-
-

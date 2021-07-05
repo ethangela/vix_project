@@ -12,7 +12,7 @@ import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "0" 
 import pandas as pd
 import math
-from configs import get_config
+from daily_configs import get_config
 import pickle
 
 
@@ -49,7 +49,7 @@ class VixData(Dataset):
         if train_mode.lower() == 'train':
             self.date, self.feature, self.gt = date[:-result_mode], feature[:-result_mode], gt[:-result_mode]
         elif train_mode.lower() == 'test':
-            self.date, self.feature = list(date[-1]), np.expand_dims(feature[-1,:,:], axis=0)
+            self.date, self.feature = [date[-1]], np.expand_dims(feature[-1,:,:], axis=0)
 
             
     def __len__(self):
@@ -139,11 +139,11 @@ class Solver(object):
             self.config.drop_rate).cuda() #GPU setting
 
         if self.config.mode.lower() == 'train':
-            checkpoint_file_path = os.path.join(self.config.save_dir, self.config.ckpt_path)
-            if os.path.isfile(checkpoint_file_path):
-                # Load weights
-                print(f'Load parameters from {checkpoint_file_path}')
-                self.model.load_state_dict(torch.load(checkpoint_file_path))
+            # checkpoint_file_path = os.path.join(self.config.save_dir, self.config.ckpt_path) #depreciated on Jul,4,2021 by Young
+            # if os.path.isfile(checkpoint_file_path):
+            #     # Load weights
+            #     print(f'Load parameters from {checkpoint_file_path}')
+            #     self.model.load_state_dict(torch.load(checkpoint_file_path))
             self.optimizer = optim.Adam(self.model.parameters(), lr=self.config.lr)
             self.model.train()
 
@@ -196,7 +196,7 @@ class Solver(object):
                 entropy_loss.backward()
                 
                 # Gradient cliping
-                torch.nn.utils.clip_grad_norm(self.model.parameters(), self.config.clip)
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.config.clip)
                 
                 # parameters update 
                 self.optimizer.step()
@@ -260,12 +260,15 @@ if __name__ == '__main__':
     config = get_config()
     for i in range(1,6):
         config.result_mode = i
-        config.ckpt_path = 'date_{}_gt_{}_epoch_{}.pkl'.format(self.config.date, str(self.config.result_mode), 200)
-        config.train_pickle_path = os.path.join(config.pickle_dir, 'vix_{}_feature_gt.pkl'.format(config.date))
-        vix_loader = get_loader(config.pickle_dir, config.train_pickle_path, config.sequence_length, config.test_ratio, config.mode, config.result_mode, config.train_length_add, config.batch_size)
+        config.ckpt_path = 'date_{}_gt_{}_epoch_{}.pkl'.format(config.date, str(config.result_mode), 200)
+        config.train_pickle_path = 'vix_{}_feature_gt.pkl'.format(config.date)
+        vix_loader = get_loader(config.pickle_dir, config.train_pickle_path, config.sequence_length, config.mode, config.result_mode, config.batch_size)
         solver = Solver(config, vix_loader)
         solver.build()
         if config.mode == 'train':
             solver.train()
         else:
             solver.evaluate()
+
+
+

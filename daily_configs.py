@@ -4,9 +4,12 @@ from pathlib import Path
 import pprint
 from datetime import date
 from pandas.tseries.offsets import BDay
+import os 
 
 today = date.today()
-today_in_format = today.strftime("%y%m%d")
+today_in_format = today.strftime("%Y%m%d")
+
+
 
 # today = datetime.datetime.today()
 # print(today - BDay(1))
@@ -41,18 +44,19 @@ def get_config(parse=True, **optional_kwargs):
     # Basic
     parser.add_argument('--verbose', type=str2bool, default='true')
     parser.add_argument('--pickle_dir', type=str, default='./pickle/')
-    parser.add_argument('--train_pickle_path', type=str, default='train.pkl')
+    #parser.add_argument('--train_pickle_path', type=str, default='train.pkl')
     parser.add_argument('--save_dir', type=str, default='./checkpoint/') 
-    parser.add_argument('--ckpt_path', type=str, default='epoch_500.pkl')
-    parser.add_argument('--date', type=str, default=today_in_format)
-    parser.add_argument('--prior_day', type=str, default='20210630')
+    #parser.add_argument('--ckpt_path', type=str, default='epoch_500.pkl')
+    parser.add_argument('--date', type=str, default=today_in_format) 
+    parser.add_argument('--prior_day', type=str, default='20210630') #!!!!!!!!!!!!!!!!!!!!!!!!jul5
+    parser.add_argument('--output_file_path', type=str, default='daily_result_log.txt')
 
     # Features
     parser.add_argument('--start_year', type=str, default='2011')
     parser.add_argument('--vix_table_path', type=str, default='VIX_2011-2021.xlsx')
     parser.add_argument('--vvix_table_path', type=str, default='VVIX_2012-2021.xlsx')
     parser.add_argument('--RSI_table_path', type=str, default='RSI_data.xlsx')
-    parser.add_argument('--feature_generate_mode', type=str, default='all')
+    parser.add_argument('--feature_generate_mode', type=str, default='daily')
     
     # Model
     # parser.add_argument('--attention_mode', type=str2bool, default='true')
@@ -64,7 +68,7 @@ def get_config(parse=True, **optional_kwargs):
 
     # Train
     parser.add_argument('--mode', type=str, default='train') 
-    parser.add_argument('--result_mode', type=int, default=1)### 
+    # parser.add_argument('--result_mode', type=int, default=1)### 
     parser.add_argument('--n_epochs', type=int, default=300) ###
     parser.add_argument('--start_epoch', type=int, default=1)
     parser.add_argument('--clip', type=float, default=5.0) 
@@ -90,6 +94,3 @@ def get_config(parse=True, **optional_kwargs):
 if __name__ == '__main__':
     config = get_config()
     
-
-
-
