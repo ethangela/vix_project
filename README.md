@@ -1,3 +1,5 @@
 # vix_project
 
-run daily_script.sh
+The daily result auto-generation tool will start, run, and terminate automatically by typing the command: ./daily.sh 
+
+
