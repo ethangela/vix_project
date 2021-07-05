@@ -1,7 +1,9 @@
 # VIX future forcast project source code
 
-This repository provides codes for the project 'VIX Future Prediction'. By typing the command 
+This repository provides codes for the project 'VIX Future Prediction'. By typing the command
+
 ./daily_script.sh 
+
 the daily prediction auto-generation tool will start, run, terminate and present the results automatically.
 
 
