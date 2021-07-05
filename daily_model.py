@@ -258,6 +258,7 @@ class Solver(object):
 
 if __name__ == '__main__':
     config = get_config()
+    print(config.date)
     for i in range(1,6):
         config.result_mode = i
         config.ckpt_path = 'date_{}_gt_{}_epoch_{}.pkl'.format(config.date, str(config.result_mode), 200)

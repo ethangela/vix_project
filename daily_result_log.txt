@@ -1,0 +1,4 @@
+date: 20210604
+close price at today: 18.29, 1 day backward: 19.45, 2 days backward: 19.05, 3 days backward: 19.46, 4 days backward: 19.1
+predicted price in 1 day forward: 18.37411117553711, 2 days forward: 17.387678146362305, 3 days forward: 19.676755905151367, 4 days forward: 18.619464874267578, 5 days forward: 18.53800392150879, 
+Buy signal: No Action, Sell signal: No Action

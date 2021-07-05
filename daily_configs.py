@@ -8,7 +8,7 @@ import os
 
 today = date.today()
 today_in_format = today.strftime("%Y%m%d")
-
+today_in_format = '20210604'
 
 
 # today = datetime.datetime.today()

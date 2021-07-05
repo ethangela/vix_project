@@ -816,7 +816,7 @@ def main_daily(config):
         del df_dic['m_{}_low'.format(i)]
 
     df_final = df_final.append(df_dic, ignore_index=True) 
-
+    print('Phase 1 completed')
 
 
 
@@ -824,7 +824,7 @@ def main_daily(config):
     # technical variables for 1mth vix future AND vix OR/AND vvix
     xls = pd.ExcelFile(config.vix_table_path)
     df_vix = pd.read_excel(xls, header=0)
-    
+
     def prior_avg(datafarme, column, date, day):
         idx = datafarme[datafarme['date'] == date].index[0]
         sum_ = 0
@@ -1160,7 +1160,8 @@ def main_daily(config):
     df_final.iloc[new_data_idx, df_final.columns.get_loc('fut_william')] = fut_william
     df_final.iloc[new_data_idx, df_final.columns.get_loc('fut_stochastic')] = fut_stochastic
     
-
+    
+    print('Phase 2 completed')
 
 
 
