@@ -4,7 +4,7 @@ This repository provides codes for the project 'VIX Future Prediction'. By typin
 
 ./daily_script.sh 
 
-the daily prediction auto-generation tool will start, run, terminate and present the results automatically.
+into Linux Bash shell, the daily prediction auto-generation tool will start, run, terminate and present the results automatically.
 
 
 
