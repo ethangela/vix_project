@@ -1,6 +1,6 @@
 #!/bin/bash
-python data_input.py --prior_day 20210630 
-python model.py --mode train
-python model.py --mode test
-python trade_output.py
+python daily_data_input.py --prior_day 20210603 --feature_generate_mode daily 
+python daily_model.py --mode train
+python daily_model.py --mode test
+python daily_trade_output.py
 
