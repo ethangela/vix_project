@@ -148,5 +148,5 @@ def trade_insight_daily(config):
 if __name__ == '__main__':    
     config = get_config()
     file = sys.stdout   
-    sys.stdout = open(config.output_file_path, 'w')   
+    sys.stdout = open(config.output_file_path, 'a')   
     trade_insight_daily(config)
