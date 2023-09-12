@@ -10,27 +10,16 @@ This repository contains codes for the project 'VIX Futures Prediction'.
 3. Other essential dependencies like numpy, sklearn, pandas, and math, etc.
 
 
-By typing the command
-
-./daily_script.sh 
-
-into Linux Bash shell, the daily prediction auto-generation tool will start, run, terminate and present the results automatically.
-
-
-
 ---
 ### Usage
 
-1. Denoising:
-     - See ```./denoising/README.md```  
-2. compressed sensing:
-     - See ```./cs/README.md```  
+1. ```./daily_script.sh ```
+     - the daily prediction auto-generation tool will start, run, terminate and present the results automatically.
+     - You might find that within the shell script daily_script.sh, there are two important configuration hyperparameters worth updating manually:
+     - ```prior_day```, type: str, example value: '20210603'.
+     - ```feature_generate_mode```, type: str, example value: 'all/daily'.
 
-You might find that within the shell script daily_script.sh, there are two important configuration hyperparameters worth updating manually:
 
---prior_day, type=str, e.g., 20210603
-
---feature_generate_mode, type=str, e.g., all/daily
 
 
 
