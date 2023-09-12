@@ -1,4 +1,4 @@
-# VIX future forecast project source code
+# VIX futures forecast project source code
 
 This repository contains codes for the project 'VIX Futures Prediction'. 
 
