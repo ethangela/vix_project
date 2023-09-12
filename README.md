@@ -1,8 +1,10 @@
 # VIX futures forecast project source code
 
-This repository contains the codes for the project 'VIX Futures Prediction'.
-
-The author is Ethan Yang Sun.
+---
+### Introduction
+1. This repository contains the codes for the project 'VIX Futures Prediction'.
+2. This code was previously private. After removing the pre-trained parameters and training details, it has been made public for learning reference.
+3. The author is Ethan Yang Sun.
 
 
 ---
