@@ -12,12 +12,10 @@ This repository contains codes for the project 'VIX Futures Prediction'.
 
 ---
 ### Usage
-
-1. ```./daily_script.sh ```
-     - the daily prediction auto-generation tool will start, run, terminate and present the results automatically.
-     - You might find that within the shell script daily_script.sh, there are two important configuration hyperparameters worth updating manually:
-     - ```prior_day```, type: str, example value: '20210603'.
-     - ```feature_generate_mode```, type: str, example value: 'all/daily'.
+1. By typing the command ```./daily_script.sh ``` in Linux Shell, the daily prediction auto-generation tool will automatically start, run, terminate, and present the results.
+2. In case of data not being maintained, discontinuity, or when the program has not been run for a long time, you can update the following two parameters ```daily_script.sh``` manually to allow the model to calibrate itself automatically:
+     - ```prior_day```, type: str, example: ```'20210603'```.
+     - ```feature_generate_mode```, type: str, example: ```'all/daily'```.
 
 
 
