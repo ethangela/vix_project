@@ -20,6 +20,12 @@ into Linux Bash shell, the daily prediction auto-generation tool will start, run
 
 ---
 ### Usage
+
+1. Denoising:
+     - See ```./denoising/README.md```  
+2. compressed sensing:
+     - See ```./cs/README.md```  
+
 You might find that within the shell script daily_script.sh, there are two important configuration hyperparameters worth updating manually:
 
 --prior_day, type=str, e.g., 20210603
