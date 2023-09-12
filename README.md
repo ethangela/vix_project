@@ -1,6 +1,8 @@
-# VIX future forcast project source code
+# VIX future forecast project source code
 
-This repository provides codes for the project 'VIX Future Prediction'. By typing the command
+This repository provides codes for the project 'VIX Future Prediction'. 
+
+By typing the command
 
 ./daily_script.sh 
 
