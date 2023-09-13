@@ -1,5 +1,5 @@
 # VIX futures forecast project source code 
-## by Ethan Yang Sun
+## Ethan Yang Sun
 
 ---
 ### Introduction
